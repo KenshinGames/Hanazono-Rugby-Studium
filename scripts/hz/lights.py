@@ -103,8 +103,11 @@ def _roof_lamps(cfg, c, nc):
     n = T["roof_lamps"]
     nrm = Vector((0, -math.cos(math.radians(38)), -math.sin(math.radians(38))))
     for i in range(n):
-        u = u0 + (u1 - u0) * i / (n - 1)
-        if i % 8 == 0:
+        # 8 台ほどずつ固まって並ぶ
+        ng = 12
+        gi, gj = i * ng // n, i - (i * ng // n) * n // ng
+        u = u0 + (u1 - u0) * (gi + 0.5) / ng + (gj - 3.5) * 0.78
+        if gj == 0:
             mb.xf = xfw
             mb.bar((u, d + 0.15, z), (u, d + 0.15, z + 0.75), 0.07, 0.07, M.get("white_steel"))
         mb.xf = xfw @ frame_xf((u, d + 0.05, z + 0.8), nrm)

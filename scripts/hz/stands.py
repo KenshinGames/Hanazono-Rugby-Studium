@@ -63,7 +63,8 @@ def _west_block(c):
     mb.box(u0, un, d0, bb["d1"], 0.0, bb["z_top"], wall)
     mb.box(un, u1, d0, bb["d1_north"], 0.0, bb["z_top"], wall)
     # 中央のガラスの箱(VIP・放送席)。前へ少し張り出す
-    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.3, d0 + 0.05, bb["box_z0"] + 1.0, bb["z_top"], M.get("glass_dark"))
+    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.3, d0 + 0.05, bb["box_z0"] + 1.0, bb["z_top"],
+           M.emissive("box_glass", (1.0, 0.82, 0.6, 1), 0.0, 1.2, base=(0.02, 0.028, 0.035, 1)))
     mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.35, d0 + 0.05, z0, bb["box_z0"] + 1.0, M.get("concrete"))
     mb.box(bb["box_u0"] - 0.3, bb["box_u1"] + 0.3, d0 - 0.6, d0, bb["z_top"], bb["z_top"] + 0.35, M.get("dark_steel"))
     mb.build("west_block", c)

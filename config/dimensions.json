@@ -100,14 +100,14 @@
   "seats": {
     "_comment": "座席。幅と色は写真からの推定。東スタンドの青い文字は北(+X)から南へ HANAZONO",
     "pitch": 0.48, "aisle_w": 1.2, "edge_w": 0.9, "vom_w": 3.0, "vom_rows": 4,
-    "letters": {"text": "HANAZONO", "u0": -67.5, "u1": 62.5, "gap": 3.0, "row0": 1, "row1": 17, "stroke": 2.7}
+    "letters": {"text": "HANAZONO", "u0": -67.5, "u1": 62.5, "gap": 3.0, "row0": 1, "row1": 21, "stroke": 2.9}
   },
 
   "roof": {
     "_comment": "メインスタンドの屋根(局所座標は west と同じ)。平面は空中写真から実測、高さと骨組みは写真からの推定",
     "main": {"u0": -67.0, "u1": 40.0, "d0": 11.0, "d1": 40.0, "bays": 9},
     "north": {"u0": 40.0, "u1": 72.0, "d0": 11.0, "d1": 34.0, "bays": 3},
-    "z_front": 26.0, "z_back": 23.0, "slope_d0": 11.0, "slope_d1": 40.0,
+    "z_front": 27.0, "z_back": 24.0, "slope_d0": 11.0, "slope_d1": 40.0,
     "col_front_d": 19.5, "col_rear_d": 27.0, "col_radius": 0.38,
     "depth_front": 0.5, "depth_col_front": 3.0, "depth_col_rear": 2.8, "depth_back": 0.8,
     "panel": 2.9, "sub_bays": 4
@@ -129,7 +129,7 @@
   "exterior": {
     "_comment": "南のスクラムスクリーンなど。図面がないので、すべて写真からの推定",
     "facade_gap": 0.6, "facade_h": 23.6, "lattice_period": 11.8, "band_w": 1.2,
-    "name_u": 6.0, "name_z": 10.6, "name_h": 1.7, "name_w": 27.0,
+    "name_u": 5.0, "name_z": 10.4, "name_h": 2.2, "name_w": 31.0,
     "corner_h": 20.5, "corner_r": 43.0, "corner_periods": 6
   },
 

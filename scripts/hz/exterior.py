@@ -52,7 +52,7 @@ def _scrum_facade(cfg, c):
     mb.box(u0, u1, D - 0.5, D + 0.25, H, H + 0.35, M.get("white_paint"))
     # 側面は白い壁
     for u in (u0, u1):
-        mb.box(u - 0.15, u + 0.15, layout.depth(st) - 12.0, D, 0, H, M.get("concrete_light"))
+        mb.box(u - 0.15, u + 0.15, layout.depth(st) - 12.0, D, 0, H, M.get("concrete"))
     # 濃い帯と明るい帯。半周期ずらして重ねる
     _lattice(mb, u0, u1, H, P, D + 0.22, 0.0, M.get("scrum_dark"), X["band_w"], 0.4)
     _lattice(mb, u0, u1, H, P, D + 0.12, P / 2, M.get("scrum_light"), X["band_w"], 0.3)
@@ -317,7 +317,7 @@ def _town(cfg, c):
     for i in range(-xs, xs + 1):
         for j in range(-xs, xs + 1):
             x, y = i * step + rnd.uniform(-3, 3), j * step + rnd.uniform(-3, 3)
-            if keep_out(x, y) or rnd.random() < 0.18:
+            if keep_out(x, y) or rnd.random() < 0.34:
                 continue
             dist = math.hypot(x, y)
             if dist > 1400:
@@ -345,8 +345,8 @@ def _mountain(cfg, c):
         return max(60.0, h)
     for (a, b) in zip(xs, xs[1:]):
         ha, hb = hgt(a), hgt(b)
-        mb.face(((b, -3000, 0), (a, -3000, 0), (a, -4500, ha), (b, -4500, hb)), mat)
-        mb.face(((b, -4500, hb), (a, -4500, ha), (a, -5200, ha * 0.9), (b, -5200, hb * 0.9)), mat)
+        mb.face(((b, -1900, 0), (a, -1900, 0), (a, -3000, ha), (b, -3000, hb)), mat)
+        mb.face(((b, -3000, hb), (a, -3000, ha), (a, -3800, ha * 0.9), (b, -3800, hb * 0.9)), mat)
     mb.build("mountain", c, smooth=True)
 
 
@@ -385,7 +385,7 @@ def _night_exterior(cfg, xf, D, H, u0, u1):
     # 広場の街灯(昼も柱は見える)
     mb = MB()
     lamp = M.emissive("street_lamp", (1.0, 0.92, 0.8, 1), 0.0, 40.0, base=(0.8, 0.8, 0.78, 1))
-    posts = [(-135, sy * yy) for sy in (-1, 1) for yy in (14, 42)] + [(-165, sy * yy) for sy in (-1, 1) for yy in (14, 40)] + [(-195, -22), (-195, 22)]
+    posts = [(-140, sy * yy) for sy in (-1, 1) for yy in (20, 56)] + [(-172, sy * yy) for sy in (-1, 1) for yy in (20, 54)] + [(-204, -24), (-204, 24)]
     for i, (x, y) in enumerate(posts):
         mb.cyl((x, y, 0), (x, y, 7.0), 0.09, M.get("dark_steel"), n=8)
         mb.box(x - 0.35, x + 0.35, y - 0.35, y + 0.35, 7.0, 7.25, M.get("dark_steel"))

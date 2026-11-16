@@ -64,6 +64,7 @@ def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION):
     nt.links.new(bg.outputs[0], out.inputs[0])
     _set_night_collections(False)
     scene.view_settings.exposure = 0.1
+    _glare(scene, False)
 
 
 def setup_night(scene):
@@ -75,6 +76,7 @@ def setup_night(scene):
     nt.links.new(bg.outputs[0], out.inputs[0])
     _set_night_collections(True)
     scene.view_settings.exposure = 0.0
+    _glare(scene, True)
 
 
 def setup_render(scene, samples=64, res=(1600, 900)):
@@ -115,3 +117,30 @@ def setup_render(scene, samples=64, res=(1600, 900)):
         print("[render] look を設定できません", e)
     print("[render] view", scene.view_settings.view_transform, scene.view_settings.look)
     scene.render.image_settings.file_format = "PNG"
+
+
+def _glare(scene, on):
+    """夜だけ、投光器のまわりに光のにじみを足す(コンポジター)。使えなければ何もしない。"""
+    try:
+        if not on:
+            scene.compositing_node_group = None
+            return
+        nt = bpy.data.node_groups.get("hz_glare")
+        if nt is None:
+            nt = bpy.data.node_groups.new("hz_glare", "CompositorNodeTree")
+            nt.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
+            rl = nt.nodes.new("CompositorNodeRLayers")
+            gl = nt.nodes.new("CompositorNodeGlare")
+            print("[glare] 入力:", [(i.name, getattr(i, "default_value", None)) for i in gl.inputs])
+            out = nt.nodes.new("NodeGroupOutput")
+            for key, val in (("Type", "Fog Glow"), ("Quality", "High"), ("Threshold", 3.0), ("Strength", 0.8), ("Size", 0.6)):
+                try:
+                    gl.inputs[key].default_value = val
+                except Exception as e:
+                    print("[glare] 設定できない項目:", key, e)
+            nt.links.new(rl.outputs["Image"], gl.inputs["Image"])
+            nt.links.new(gl.outputs["Image"], out.inputs[0])
+        scene.compositing_node_group = nt
+        scene.render.use_compositing = True
+    except Exception as e:
+        print("[glare] 光のにじみは使えません:", e)
