@@ -63,7 +63,7 @@ def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION):
     nt.links.new(sky.outputs[0], bg.inputs[0])
     nt.links.new(bg.outputs[0], out.inputs[0])
     _set_night_collections(False)
-    scene.view_settings.exposure = 0.45
+    scene.view_settings.exposure = 0.1
 
 
 def setup_night(scene):

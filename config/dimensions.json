@@ -113,6 +113,19 @@
     "panel": 2.9, "sub_bays": 4
   },
 
+  "screen": {
+    "_comment": "大型映像装置。表示面 16.08 x 8.16 m は公式。位置と枠の大きさ、高さは写真からの推定",
+    "x_face": 89.4, "y_center": 0.0, "frame_w": 19.6, "frame_h": 10.0, "z_bottom": 15.0, "thickness": 2.2,
+    "display_w": 16.08, "display_h": 8.16, "leg_y": 5.2, "leg_size": 1.7
+  },
+
+  "towers": {
+    "_comment": "照明塔 4 基。位置は空中写真、高さと枠の大きさは写真からの推定。投光器は全部で 381 台(公式): 塔 4 x 72 + 屋根 93",
+    "positions": {"nw": [88.0, 45.0], "ne": [91.5, -60.0], "sw": [-79.0, 73.0], "se": [-80.0, -67.0]},
+    "height": 37.0, "bank_w": 18.0, "bank_h": 5.6, "rows": 4, "cols": 18,
+    "pole_r_bottom": 1.15, "pole_r_top": 0.65, "roof_lamps": 93
+  },
+
   "benches": {
     "_comment": "メインスタンド前の選手ベンチ(透明の屋根つき)。位置と大きさは写真からの推定",
     "y": 41.6,

@@ -36,6 +36,17 @@ def _principled(name, color, rough=0.6, metal=0.0, emit=None, emit_strength=0.0,
     return m
 
 
+def emissive(name, color, day, night, base=None):
+    """昼と夜で光の強さを切り替える面(sky.py が切り替える)。"""
+    if name in _cache:
+        return _cache[name]
+    m = _principled(name, base or color, rough=0.3, emit=color, emit_strength=day)
+    m["emit_day"] = float(day)
+    m["emit_night"] = float(night)
+    _cache[name] = m
+    return m
+
+
 def define(name, **kw):
     _defs[name] = kw
 
@@ -164,9 +175,9 @@ def _noisy(name, color, rough, scale=1.5, amount=0.25, bump=0.0, metal=0.0):
 
 _builders = {
     "grass": _grass,
-    "concrete": _noisy("concrete", srgb(176, 174, 168), 0.85, scale=0.8, amount=0.10, bump=0.15),
-    "concrete_dark": _noisy("concrete_dark", srgb(120, 120, 118), 0.9, scale=0.8, amount=0.12, bump=0.15),
-    "concrete_light": _noisy("concrete_light", srgb(205, 203, 197), 0.8, scale=0.8, amount=0.07, bump=0.1),
+    "concrete": _noisy("concrete", srgb(150, 148, 142), 0.85, scale=0.8, amount=0.10, bump=0.15),
+    "concrete_dark": _noisy("concrete_dark", srgb(72, 72, 74), 0.9, scale=0.8, amount=0.12, bump=0.15),
+    "concrete_light": _noisy("concrete_light", srgb(186, 184, 178), 0.8, scale=0.8, amount=0.07, bump=0.1),
     "asphalt": _noisy("asphalt", srgb(92, 92, 94), 0.95, scale=0.5, amount=0.15, bump=0.2),
     "paving_brick": _noisy("paving_brick", srgb(176, 132, 112), 0.9, scale=0.6, amount=0.12, bump=0.15),
     "paving_grey": _noisy("paving_grey", srgb(170, 168, 162), 0.9, scale=0.6, amount=0.10, bump=0.15),
@@ -185,8 +196,8 @@ define("black", color=srgb(16, 16, 18), rough=0.6)
 define("pad_white", color=srgb(240, 240, 240), rough=0.55)
 define("pad_red", color=srgb(196, 30, 36), rough=0.55)
 define("flag_red", color=srgb(214, 36, 40), rough=0.7)
-define("seat_red", color=srgb(214, 44, 38), rough=0.42)
-define("seat_blue", color=srgb(34, 70, 170), rough=0.42)
+define("seat_red", color=srgb(200, 22, 16), rough=0.6, spec=0.3)
+define("seat_blue", color=srgb(20, 48, 160), rough=0.6, spec=0.3)
 define("seat_grey", color=srgb(150, 152, 156), rough=0.42)
 define("glass", color=srgb(150, 175, 185), rough=0.06, metal=0.0, transmission=0.0, alpha=1.0, spec=1.0, coat=1.0)
 define("glass_dark", color=srgb(34, 44, 52), rough=0.05, spec=1.0, coat=1.0)
@@ -197,3 +208,17 @@ define("roof_sheet", color=srgb(196, 198, 196), rough=0.55, metal=0.2)
 define("roof_under", color=srgb(214, 214, 210), rough=0.6)
 define("screen_frame", color=srgb(52, 56, 60), rough=0.5)
 define("lamp_off", color=srgb(210, 212, 205), rough=0.3)
+define("tower_pole", color=srgb(40, 36, 34), rough=0.55, metal=0.2)
+define("flag_a", color=srgb(240, 240, 240), rough=0.7)
+define("flag_b", color=srgb(30, 70, 160), rough=0.7)
+define("flag_c", color=srgb(150, 30, 50), rough=0.7)
+define("flag_d", color=srgb(40, 130, 70), rough=0.7)
+define("sign_white", color=srgb(240, 240, 236), rough=0.5)
+define("sign_blue", color=srgb(20, 90, 170), rough=0.5)
+define("sign_green", color=srgb(30, 120, 80), rough=0.5)
+define("sign_yellow", color=srgb(240, 200, 40), rough=0.5)
+define("sign_red", color=srgb(200, 40, 40), rough=0.5)
+define("sign_navy", color=srgb(20, 30, 70), rough=0.5)
+define("text_dark", color=srgb(20, 22, 30), rough=0.6)
+define("text_white", color=srgb(245, 245, 245), rough=0.6)
+define("text_red", color=srgb(200, 30, 36), rough=0.6)

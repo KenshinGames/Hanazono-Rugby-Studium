@@ -188,3 +188,69 @@ def arc_pts(cx, cy, r, a0, a1, n):
     """中心 (cx,cy)、半径 r の弧の点列(角度は度)。"""
     return [(cx + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
              cy + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+
+
+JP_FONT = "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"
+_fonts = {}
+
+
+def _font(path):
+    if path not in _fonts:
+        try:
+            _fonts[path] = bpy.data.fonts.load(path)
+        except Exception as e:
+            print("[text] フォントを読めません:", path, e)
+            _fonts[path] = None
+    return _fonts[path]
+
+
+def text_obj(name, body, height, mat, collection, origin, normal, align="CENTER", jp=False, extrude=0.0,
+             max_width=None, up=(0, 0, 1)):
+    """壁に貼る文字。origin は文字の基準点(左右は align、上下は中央)、normal は文字の面が向く向き。
+    height は大文字の高さ(m)。メッシュに直して返す。"""
+    cu = bpy.data.curves.new(name, "FONT")
+    cu.body = body
+    cu.align_x = align
+    cu.align_y = "CENTER"
+    cu.extrude = extrude
+    if jp:
+        f = _font(JP_FONT)
+        if f:
+            cu.font = f
+    cu.size = height / 0.72
+    tmp = bpy.data.objects.new(name + "_tmp", cu)
+    bpy.context.scene.collection.objects.link(tmp)
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(tmp.evaluated_get(dg))
+    bpy.data.objects.remove(tmp)
+    bpy.data.curves.remove(cu)
+    me.name = name
+    me.materials.append(mat)
+    ob = bpy.data.objects.new(name, me)
+    n = Vector(normal).normalized()
+    u = Vector(up)
+    x = u.cross(n).normalized()
+    y = n.cross(x).normalized()
+    m = Matrix.Identity(4)
+    for i, col in enumerate((x, y, n)):
+        m[0][i], m[1][i], m[2][i] = col
+    sx = 1.0
+    if max_width and me.vertices:
+        xs = [v.co.x for v in me.vertices]
+        w = max(xs) - min(xs)
+        if w > max_width:
+            sx = max_width / w
+    ob.matrix_world = Matrix.Translation(Vector(origin)) @ m @ Matrix.Diagonal((sx, 1, 1, 1))
+    collection.objects.link(ob)
+    return ob
+
+
+def frame_xf(origin, normal, up=(0, 0, 1)):
+    """局所の x=右、y=上、z=normal とする行列(MB の xf に使う)。"""
+    n = Vector(normal).normalized()
+    x = Vector(up).cross(n).normalized()
+    y = n.cross(x).normalized()
+    m = Matrix.Identity(4)
+    for i, col in enumerate((x, y, n)):
+        m[0][i], m[1][i], m[2][i] = col
+    return Matrix.Translation(Vector(origin)) @ m
