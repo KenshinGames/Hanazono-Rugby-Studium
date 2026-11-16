@@ -126,6 +126,13 @@
     "pole_r_bottom": 1.15, "pole_r_top": 0.65, "roof_lamps": 93
   },
 
+  "exterior": {
+    "_comment": "南のスクラムスクリーンなど。図面がないので、すべて写真からの推定",
+    "facade_gap": 0.6, "facade_h": 23.6, "lattice_period": 11.8, "band_w": 1.2,
+    "name_u": 6.0, "name_z": 10.6, "name_h": 1.7, "name_w": 27.0,
+    "corner_h": 20.5, "corner_r": 43.0, "corner_periods": 6
+  },
+
   "benches": {
     "_comment": "メインスタンド前の選手ベンチ(透明の屋根つき)。位置と大きさは写真からの推定",
     "y": 41.6,

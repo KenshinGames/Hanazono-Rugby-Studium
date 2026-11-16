@@ -173,13 +173,108 @@ def _noisy(name, color, rough, scale=1.5, amount=0.25, bump=0.0, metal=0.0):
     return build
 
 
+def _scrum_tiles():
+    """スクラムスクリーンの下地。菱形のタイルを灰色の濃淡とガラスで塗り分ける(面は X 一定)。"""
+    m = _principled("scrum_tiles", (0.4, 0.4, 0.4, 1), rough=0.45)
+    nt = m.node_tree
+    N, L = nt.nodes, nt.links
+    b = N.get("Principled BSDF")
+    geo = N.new("ShaderNodeNewGeometry")
+    sep = N.new("ShaderNodeSeparateXYZ")
+    L.new(geo.outputs["Position"], sep.inputs[0])
+
+    def math(op, a, bval=None, b_sock=None):
+        n = N.new("ShaderNodeMath"); n.operation = op
+        L.new(a, n.inputs[0])
+        if b_sock is not None:
+            L.new(b_sock, n.inputs[1])
+        elif bval is not None:
+            n.inputs[1].default_value = bval
+        return n.outputs[0]
+    yy = math("DIVIDE", sep.outputs["Y"], 1.6)
+    zz = math("DIVIDE", sep.outputs["Z"], 3.0)
+    a = math("ADD", yy, b_sock=zz)
+    bb = math("SUBTRACT", yy, b_sock=zz)
+    fa, fb = math("FLOOR", a), math("FLOOR", bb)
+    comb = N.new("ShaderNodeCombineXYZ")
+    L.new(fa, comb.inputs[0]); L.new(fb, comb.inputs[1])
+    wn = N.new("ShaderNodeTexWhiteNoise"); wn.noise_dimensions = "2D"
+    L.new(comb.outputs[0], wn.inputs["Vector"])
+    ramp = N.new("ShaderNodeValToRGB")
+    ramp.color_ramp.interpolation = "CONSTANT"
+    els = ramp.color_ramp.elements
+    els[0].position = 0.0; els[0].color = (0.035, 0.045, 0.055, 1)
+    els[1].position = 0.14; els[1].color = srgb(128, 132, 138)
+    for pos, col in ((0.42, srgb(168, 170, 172)), (0.7, srgb(200, 201, 200)), (0.9, srgb(226, 226, 222))):
+        e = els.new(pos); e.color = col
+    L.new(wn.outputs["Value"], ramp.inputs["Fac"])
+    # 目地
+    fra, frb = math("FRACT", a), math("FRACT", bb)
+    mn = math("MINIMUM", fra, b_sock=frb)
+    joint = math("GREATER_THAN", mn, 0.035)
+    mul = N.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"
+    mul.inputs["Factor"].default_value = 1.0
+    L.new(ramp.outputs["Color"], mul.inputs["A"])
+    jc = N.new("ShaderNodeMapRange")
+    jc.inputs["To Min"].default_value = 0.45
+    L.new(joint, jc.inputs["Value"])
+    L.new(jc.outputs["Result"], mul.inputs["B"])
+    L.new(mul.outputs["Result"], b.inputs["Base Color"])
+    rr = N.new("ShaderNodeMapRange")
+    rr.inputs["From Max"].default_value = 0.14
+    rr.inputs["To Min"].default_value = 0.08
+    rr.inputs["To Max"].default_value = 0.5
+    L.new(wn.outputs["Value"], rr.inputs["Value"])
+    L.new(rr.outputs["Result"], b.inputs["Roughness"])
+    return m
+
+
+def _brick_paving():
+    m = _principled("paving_brick", srgb(140, 92, 76), rough=0.9)
+    nt = m.node_tree
+    N, L = nt.nodes, nt.links
+    b = N.get("Principled BSDF")
+    geo = N.new("ShaderNodeNewGeometry")
+    br = N.new("ShaderNodeTexBrick")
+    br.inputs["Color1"].default_value = srgb(146, 96, 78)
+    br.inputs["Color2"].default_value = srgb(126, 82, 70)
+    br.inputs["Mortar"].default_value = srgb(96, 78, 70)
+    br.inputs["Scale"].default_value = 1.0
+    br.inputs["Mortar Size"].default_value = 0.012
+    br.inputs["Brick Width"].default_value = 0.42
+    br.inputs["Row Height"].default_value = 0.21
+    L.new(geo.outputs["Position"], br.inputs["Vector"])
+    noise = N.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = 0.08
+    L.new(geo.outputs["Position"], noise.inputs["Vector"])
+    mp = N.new("ShaderNodeMapRange")
+    mp.inputs["To Min"].default_value = 0.8
+    mp.inputs["To Max"].default_value = 1.15
+    L.new(noise.outputs["Fac"], mp.inputs["Value"])
+    mul = N.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"
+    mul.inputs["Factor"].default_value = 1.0
+    L.new(br.outputs["Color"], mul.inputs["A"])
+    L.new(mp.outputs["Result"], mul.inputs["B"])
+    L.new(mul.outputs["Result"], b.inputs["Base Color"])
+    return m
+
+
 _builders = {
+    "scrum_tiles": _scrum_tiles,
+    "ground_far": _noisy("ground_far", srgb(120, 124, 118), 0.95, scale=0.004, amount=0.2),
+    "turf2": _noisy("turf2", srgb(40, 96, 50), 0.9, scale=0.2, amount=0.12),
+    "hockey": _noisy("hockey", srgb(96, 160, 150), 0.85, scale=0.2, amount=0.06),
+    "asphalt_dark": _noisy("asphalt_dark", srgb(66, 66, 70), 0.95, scale=0.5, amount=0.15),
+    "leaf_a": _noisy("leaf_a", srgb(52, 92, 40), 0.9, scale=1.5, amount=0.35),
+    "leaf_b": _noisy("leaf_b", srgb(70, 108, 46), 0.9, scale=1.5, amount=0.35),
+    "mountain": _noisy("mountain", srgb(86, 110, 118), 1.0, scale=0.004, amount=0.15),
     "grass": _grass,
     "concrete": _noisy("concrete", srgb(150, 148, 142), 0.85, scale=0.8, amount=0.10, bump=0.15),
     "concrete_dark": _noisy("concrete_dark", srgb(72, 72, 74), 0.9, scale=0.8, amount=0.12, bump=0.15),
     "concrete_light": _noisy("concrete_light", srgb(186, 184, 178), 0.8, scale=0.8, amount=0.07, bump=0.1),
     "asphalt": _noisy("asphalt", srgb(92, 92, 94), 0.95, scale=0.5, amount=0.15, bump=0.2),
-    "paving_brick": _noisy("paving_brick", srgb(176, 132, 112), 0.9, scale=0.6, amount=0.12, bump=0.15),
+    "paving_brick": _brick_paving,
+    "paving_brick_plain": _noisy("paving_brick", srgb(140, 92, 76), 0.9, scale=0.6, amount=0.12, bump=0.15),
     "paving_grey": _noisy("paving_grey", srgb(170, 168, 162), 0.9, scale=0.6, amount=0.10, bump=0.15),
     "apron": _noisy("apron", srgb(24, 112, 48), 0.9, scale=2.0, amount=0.10, bump=0.3),
     "lawn": _noisy("lawn", srgb(74, 110, 52), 0.95, scale=0.3, amount=0.25, bump=0.3),
@@ -222,3 +317,13 @@ define("sign_navy", color=srgb(20, 30, 70), rough=0.5)
 define("text_dark", color=srgb(20, 22, 30), rough=0.6)
 define("text_white", color=srgb(245, 245, 245), rough=0.6)
 define("text_red", color=srgb(200, 30, 36), rough=0.6)
+define("scrum_dark", color=srgb(84, 90, 100), rough=0.5)
+define("scrum_light", color=srgb(224, 226, 226), rough=0.5)
+define("trunk", color=srgb(80, 62, 48), rough=0.9)
+define("house_a", color=srgb(214, 208, 196), rough=0.9)
+define("house_b", color=srgb(188, 186, 180), rough=0.9)
+define("house_c", color=srgb(226, 222, 212), rough=0.9)
+define("roof_a", color=srgb(78, 82, 92), rough=0.8)
+define("roof_b", color=srgb(60, 88, 130), rough=0.8)
+define("roof_c", color=srgb(120, 96, 84), rough=0.8)
+define("aisle_dark", color=srgb(46, 46, 50), rough=0.9)

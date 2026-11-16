@@ -69,8 +69,8 @@ def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION):
 def setup_night(scene):
     w, nt = _world(scene)
     bg = nt.nodes.new("ShaderNodeBackground")
-    bg.inputs["Color"].default_value = (0.010, 0.014, 0.030, 1)
-    bg.inputs["Strength"].default_value = 0.35
+    bg.inputs["Color"].default_value = (0.020, 0.032, 0.075, 1)   # 日が落ちたあとの濃い青
+    bg.inputs["Strength"].default_value = 0.8
     out = nt.nodes.new("ShaderNodeOutputWorld")
     nt.links.new(bg.outputs[0], out.inputs[0])
     _set_night_collections(True)

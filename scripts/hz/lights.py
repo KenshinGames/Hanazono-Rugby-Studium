@@ -83,7 +83,7 @@ def _towers(cfg, c, nc):
         # 夜の光: 枠の前に面の光を 1 枚
         aim2 = Vector((x * 0.25, y * 0.2, 0.0))
         loc = centre + n * 1.0
-        _area("tower_light_" + tag, nc, loc, (aim2 - loc), bw, bh, 9.0e4, spread=100.0)
+        _area("tower_light_" + tag, nc, loc, (aim2 - loc), bw, bh, 6.0e4, spread=100.0)
 
 
 def _roof_lamps(cfg, c, nc):
@@ -117,4 +117,4 @@ def _roof_lamps(cfg, c, nc):
         u = u0 + (u1 - u0) * (i + 0.5) / k
         loc = xfw @ Vector((u, d - 0.6, z + 0.6))
         tgt = Vector((u * 0.7, 5.0, 0.0))
-        _area("roof_light_%d" % i, nc, loc, tgt - loc, (u1 - u0) / k * 0.9, 0.5, 2.2e4, spread=110.0)
+        _area("roof_light_%d" % i, nc, loc, tgt - loc, (u1 - u0) / k * 0.9, 0.5, 1.4e4, spread=110.0)

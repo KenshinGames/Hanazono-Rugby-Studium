@@ -12,7 +12,7 @@ import bpy  # noqa: E402
 
 from hz import config, materials, util  # noqa: E402
 
-STAGES = ["pitch", "stands", "roof", "seats", "details", "screen", "lights", "exterior"]
+STAGES = ["pitch", "stands", "roof", "seats", "details", "screen", "lights", "exterior", "signage"]
 
 
 def main():

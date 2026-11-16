@@ -31,7 +31,7 @@ def build():
 
         # 縦通路: 暗い色の帯と、蹴上げを半分に割る小段
         mb = MB(xf)
-        dark = M.get("concrete_dark")
+        dark = M.get("aisle_dark")
         for t in T:
             if t["kind"] != "row":
                 continue
