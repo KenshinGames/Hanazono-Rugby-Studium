@@ -1,0 +1,69 @@
+{
+  "_comment": "東大阪市花園ラグビー場 第1グラウンドの寸法。単位は m。原点=フィールド中心、+X=北スタンド側(タッチラインの向き)、+Y=メインスタンド(西)側、+Z=上、芝の面 Z=0。出どころは docs/reference.md。",
+
+  "site": {
+    "x_axis_azimuth_deg": 345.7,
+    "latitude": 34.668917,
+    "longitude": 135.62625
+  },
+
+  "field": {
+    "_comment": "ラグビーのライン。試合を足すスクリプトはここを読む",
+    "length": 100.0,
+    "width": 70.0,
+    "in_goal_depth": 10.0,
+    "line_width": 0.1,
+    "line_22m_from_goal": 22.0,
+    "line_10m_from_halfway": 10.0,
+    "line_5m_from_touch": 5.0,
+    "line_15m_from_touch": 15.0,
+    "line_5m_from_goal": 5.0,
+    "dash_length": 5.0,
+    "centre_mark_length": 0.5
+  },
+
+  "goal": {
+    "post_spacing": 5.6,
+    "crossbar_height": 3.0,
+    "post_height": 17.0,
+    "post_radius_bottom": 0.075,
+    "post_radius_top": 0.04,
+    "crossbar_radius": 0.05,
+    "pad_size": 0.42,
+    "pad_height": 2.0
+  },
+
+  "flags": {
+    "post_height": 1.5,
+    "offset_outside_touch": 2.0,
+    "flag_w": 0.35,
+    "flag_h": 0.28
+  },
+
+  "turf": {
+    "_comment": "天然芝の範囲(空中写真から実測)と刈り目の縞",
+    "x_min": -67.4,
+    "x_max": 68.6,
+    "y_min": -40.8,
+    "y_max": 40.8,
+    "stripe_width_cross": 5.0,
+    "stripe_width_long": 2.7
+  },
+
+  "walls": {
+    "_comment": "各スタンドの前の壁の位置(空中写真から実測)",
+    "west_y": 43.0,
+    "east_y": -42.5,
+    "north_x": 72.0,
+    "south_x": -73.0
+  },
+
+  "benches": {
+    "_comment": "メインスタンド前の選手ベンチ(透明の屋根つき)。位置と大きさは写真からの推定",
+    "y": 41.6,
+    "x_centers": [-17.0, 17.0],
+    "length": 12.0,
+    "depth": 1.8,
+    "height": 2.3
+  }
+}
