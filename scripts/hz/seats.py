@@ -147,7 +147,7 @@ def build():
             ob = bpy.data.objects.new(me.name, me)
             ob.matrix_world = layout.xf(name)
             c.objects.link(ob)
-            ob.instance_type = "VERTICES"
+            ob.instance_type = "VERTS"
             child = bpy.data.objects.new("seat_%s_%s" % (name, col), red_me if col == "red" else blue_me)
             c.objects.link(child)
             child.parent = ob
