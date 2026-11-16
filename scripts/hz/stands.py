@@ -20,13 +20,23 @@ def _mass(name, c):
     wall = M.get("concrete_light")
     T = layout.treads(st)
     zprev = 0.0
+    V = layout.voms(st)
     for i, t in enumerate(T):
         d0, d1, z = t["d0"], t["d1"], t["z"]
         a0, b0 = layout.u_range(st, d0)
         a1, b1 = layout.u_range(st, d1)
-        if z > zprev:
-            mb.face(((a0, d0, zprev), (b0, d0, zprev), (b0, d0, z), (a0, d0, z)), wall if i == 0 else conc)
-        mb.face(((a0, d0, z), (b0, d0, z), (b1, d1, z), (a1, d1, z)), conc)
+        dm = (d0 + d1) / 2
+        cuts = [(v["u0"], v["u1"]) for v in V if v["d0"] <= dm < v["d1"]]
+        for (p, q) in layout.subtract(0.0, 1.0, [((c0 - a0) / (b0 - a0), (c1 - a0) / (b0 - a0)) for c0, c1 in cuts]):
+            f0a, f0b = a0 + (b0 - a0) * p, a0 + (b0 - a0) * q
+            f1a, f1b = (a1 + (b1 - a1) * p, a1 + (b1 - a1) * q) if not cuts else (f0a, f0b)
+            if p == 0.0:
+                f1a = a1
+            if q == 1.0:
+                f1b = b1
+            if z > zprev:
+                mb.face(((f0a, d0, zprev), (f0b, d0, zprev), (f0b, d0, z), (f0a, d0, z)), wall if i == 0 else conc)
+            mb.face(((f0a, d0, z), (f0b, d0, z), (f1b, d1, z), (f1a, d1, z)), conc)
         mb.face(((b0, d0, 0), (b1, d1, 0), (b1, d1, z), (b0, d0, z)), wall)
         mb.face(((a1, d1, 0), (a0, d0, 0), (a0, d0, z), (a1, d1, z)), wall)
         zprev = z
@@ -53,8 +63,9 @@ def _west_block(c):
     mb.box(u0, un, d0, bb["d1"], 0.0, bb["z_top"], wall)
     mb.box(un, u1, d0, bb["d1_north"], 0.0, bb["z_top"], wall)
     # 中央のガラスの箱(VIP・放送席)。前へ少し張り出す
-    mb.box(bb["box_u0"], bb["box_u1"], d0 - 1.6, d0 + 0.05, bb["box_z0"], bb["z_top"], M.get("glass_dark"))
-    mb.box(bb["box_u0"] - 0.3, bb["box_u1"] + 0.3, d0 - 1.9, d0, bb["z_top"], bb["z_top"] + 0.35, M.get("dark_steel"))
+    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.3, d0 + 0.05, bb["box_z0"] + 1.0, bb["z_top"], M.get("glass_dark"))
+    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.35, d0 + 0.05, z0, bb["box_z0"] + 1.0, M.get("concrete"))
+    mb.box(bb["box_u0"] - 0.3, bb["box_u1"] + 0.3, d0 - 0.6, d0, bb["z_top"], bb["z_top"] + 0.35, M.get("dark_steel"))
     mb.build("west_block", c)
 
 
