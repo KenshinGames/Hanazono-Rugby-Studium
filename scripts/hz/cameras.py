@@ -35,6 +35,18 @@ def look_at(ob, target):
 
 
 def make(scene, name, loc=None, target=None, lens=None):
+    if name == "map":
+        # 空中写真(refs/map/stadium_grid10m.png、1 m = 5 画素)と重ねるための真上からの正射影
+        import math
+        cam = bpy.data.cameras.new(name)
+        cam.type = "ORTHO"
+        cam.ortho_scale = 1596 / 5.0
+        cam.clip_end = 3000.0
+        ob = bpy.data.objects.new("cam_map", cam)
+        ob.location = (0, 0, 500)
+        ob.rotation_euler = (0, 0, -math.pi / 2)
+        scene.collection.objects.link(ob)
+        return ob
     if loc is None:
         loc, target, lens = VIEWS[name]
     cam = bpy.data.cameras.new(name)

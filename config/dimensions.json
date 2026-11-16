@@ -58,6 +58,51 @@
     "south_x": -73.0
   },
 
+  "stands": {
+    "_comment": "各スタンドの断面。局所座標 u=左右、d=前の壁から外へ。W: u=X、E: u=-X、N: u=-Y、S: u=+Y。u0/u1 は [a, b] で a + b*d。segments は前から順に rows[段数, 奥行, 蹴上げ] / flat[幅] / rise[高さ]。外形は実測、段数と高さは席数と写真からの推定",
+    "west": {
+      "side": "W", "wall": 43.0, "u0": [-65.0, 0.0], "u1": [75.0, 0.0],
+      "front_wall_h": 3.3,
+      "segments": [["rows", 10, 0.8, 0.36], ["flat", 2.2], ["rise", 0.7], ["rows", 18, 0.8, 0.5], ["flat", 3.0]],
+      "back_block": {"d1": 41.0, "d1_north": 32.5, "north_from_u": 45.0, "z_top": 20.6,
+                     "box_u0": -40.0, "box_u1": 32.0, "box_z0": 17.4}
+    },
+    "east": {
+      "side": "E", "wall": -42.5, "u0": [-71.0, 0.0], "u1": [66.0, 0.0],
+      "front_wall_h": 2.6,
+      "segments": [["rows", 12, 0.8, 0.36], ["flat", 1.6], ["rows", 18, 0.8, 0.45], ["flat", 1.4]],
+      "back_parapet": 1.1
+    },
+    "north": {
+      "side": "N", "wall": 72.0, "u0": [-36.0, -0.4], "u1": [36.0, 0.4],
+      "front_wall_h": 4.6,
+      "segments": [["flat", 1.0], ["rows", 5, 0.8, 0.4], ["flat", 2.0], ["rise", 0.9], ["rows", 13, 0.8, 0.47], ["flat", 1.6]],
+      "back_parapet": 1.1
+    },
+    "south": {
+      "side": "S", "wall": -73.0, "u0": [-34.0, 0.0], "u1": [34.0, 0.0],
+      "front_wall_h": 2.2,
+      "segments": [["flat", 0.6], ["rows", 7, 0.8, 0.33], ["flat", 2.0], ["rise", 0.7], ["rows", 11, 0.8, 0.38], ["flat", 1.5],
+                   ["rows", 15, 0.8, 0.42], ["flat", 1.5], ["rows", 14, 0.8, 0.48], ["flat", 4.6]],
+      "back_parapet": 1.1
+    },
+    "corners": {
+      "_comment": "南の両脇の立見の段。中心 (cx, ±cy) の弧。西側は cy を正、東側は負にする",
+      "cx": -66.0, "cy": 34.0, "r_inner": 14.0, "base_h": 1.2, "steps": 24, "tread": 0.9, "riser": 0.3,
+      "back_flat": 1.5
+    }
+  },
+
+  "roof": {
+    "_comment": "メインスタンドの屋根(局所座標は west と同じ)。平面は空中写真から実測、高さと骨組みは写真からの推定",
+    "main": {"u0": -67.0, "u1": 40.0, "d0": 11.0, "d1": 40.0, "bays": 9},
+    "north": {"u0": 40.0, "u1": 72.0, "d0": 11.0, "d1": 34.0, "bays": 3},
+    "z_front": 26.0, "z_back": 23.0, "slope_d0": 11.0, "slope_d1": 40.0,
+    "col_front_d": 19.5, "col_rear_d": 27.0, "col_radius": 0.38,
+    "depth_front": 0.5, "depth_col_front": 3.0, "depth_col_rear": 2.8, "depth_back": 0.8,
+    "panel": 2.9, "sub_bays": 4
+  },
+
   "benches": {
     "_comment": "メインスタンド前の選手ベンチ(透明の屋根つき)。位置と大きさは写真からの推定",
     "y": 41.6,
