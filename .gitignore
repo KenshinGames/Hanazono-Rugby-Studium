@@ -147,3 +147,14 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# ---- hanazono-rugby ----
+# 生成物(スクリプトから作り直せる)
+*.blend
+*.blend1
+out/
+build/
+# 参考写真・地図は他者の著作物なので入れない(出どころは docs/reference.md)
+refs/
+__pycache__/
+.DS_Store
