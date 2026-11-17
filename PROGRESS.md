@@ -5,26 +5,28 @@
 
 ## 今の段階
 
-**②グラウンド、③スタンドの形、④屋根、⑤座席と細部まで完了。次は⑥映像装置と照明。**
-本人から「進めて」の返事をもらった(2026-11-17)。以降は段階ごとに止まらずに最後まで進める。
+**①〜⑧完了。⑨見比べの 1 回目が済み、仕上げの静止画 10 枚(out/final)も描いた。**
+**今やっていること: 一周の動画を描く → ⑨の 2 回目(比較を作り直して、残った違いを上から直す)。**
+本人から「進めて」の返事をもらっている(2026-11-17)。段階ごとに止まらずに最後まで進める。
 
 ## 終わったこと
 
 - ①資料調べと計画(docs/reference.md、docs/plan.md)
-- ②グラウンド: scripts/hz/pitch.py(芝と縞、ライン、ゴール、フラッグ、ベンチ)
-- ③スタンド: scripts/hz/stands.py(断面は config/dimensions.json の stands)。真上からの図を空中写真に重ねて外形を確認済み(out/stage3/map_overlay.jpg)
-- ④屋根: scripts/hz/roof.py(立体トラス、丸柱)
-- ⑤座席と細部: scripts/hz/seats.py(約 21,500 席。東スタンドに青の HANAZONO)、scripts/hz/details.py(縦通路、出入口、手すり、北のガラスの部屋)
-- 描画: scripts/render.py、光は scripts/hz/sky.py、角度は scripts/hz/cameras.py
-- 確認用の画像は out/stage2〜 に出している
+- ②グラウンド scripts/hz/pitch.py / ③スタンド stands.py(断面は config/dimensions.json、共通の計算は layout.py)/ ④屋根 roof.py
+- ⑤座席 seats.py(21,555 席、東に青の HANAZONO)と細部 details.py
+- ⑥映像装置 screen.py、照明 lights.py(塔 4 基、屋根先端の投光器、夜の光は night_lights コレクション)
+- ⑦外側 exterior.py(スクラムスクリーン、外壁、広場、家並み、木、山、夜の外観の光)、架空の看板 signage.py
+- ⑧質感 materials.py、光 sky.py(昼は太陽の方位 228°・高度 47°、夜は濃い青の空+投光器)
+- ⑨の 1 回目: scripts/compare.py で 9 組の比較を docs/compare/ に。直した 10 点と残った違いは docs/remaining.md
+- 仕上げの静止画: out/final/ に 5 角度 × 昼夜の 10 枚(3840×2160、200 サンプル)
+- 一周の動画のスクリプト scripts/orbit.py(4 コマで試した。1 コマ約 15 秒、900 コマで 4 時間弱)
 
 ## 次にやること
 
-1. ⑥映像装置、照明塔 4 基、屋根先端の投光器、旗のポール、夜の光
-2. ⑦外側(スクラムスクリーン、外壁、広場、周りの地面)
-3. ⑧質感と光の仕上げ(コンクリートが白すぎる、通路をもっと暗く、など)
-4. ⑨参考写真と並べて見比べ、docs/compare/ と docs/remaining.md を作る
-5. 仕上げ: 5 角度 × 昼夜の静止画(out/final)、一周の動画(scripts/orbit.py はまだない)
+1. `./run.sh video` で一周の動画(out/hanazono_orbit.mp4)。途中で止まっても out/orbit_frames_day/ のコマから続きを描く
+2. ⑨の 2 回目: `./run.sh compare` で比較を作り直し、docs/remaining.md の上から直せるものを直す
+3. モデルを直したら out/final の静止画を描き直す(`./run.sh stills`)
+4. 最後に docs/remaining.md と、このファイルを更新してコミット・push
 
 ## 自分で決めたこと
 
@@ -38,7 +40,9 @@
 - 高さの公式な数字がない(すべて推定)。写真にカメラを合わせて決める
 - インゴールの奥行が不明(仮に 10 m)
 - 照明塔の正確な位置と高さが不明
-- 空き容量が約 15 GB。動画のコマは書き出し後に消す
+- 空き容量が約 12 GB。動画のコマは書き出し後に消す
+- 夜の投光器の光のにじみ(コンポジターの Glare)が効いていない。sky.py の _glare
+- 夜の外観(exterior)の 4K は 1 枚に 47 分かかった。ほかは 3〜5 分。街灯の点光源が原因かもしれない
 - refs/ は git に入れていない。別の Mac で続ける場合は reference.md の URL から取り直す
 
 ## 写真から決め直した数字(reference.md にも反映する)
