@@ -5,22 +5,22 @@
 
 ## 今の段階
 
-**完了(2026-11-17)。** 終わりの条件 5 つはすべて満たした。
+**⑨の 3 回目(本人の「全部やろう」を受けて)の直しは済み、描き直しを裏で流している(2026-11-17 夜)。**
+`./run.sh compare` → `SAMPLES=160 ./run.sh stills` → `./run.sh video` を順に流している(合わせて 7 時間ほど)。
 
-- `./run.sh build` で build/hanazono.blend ができる(約 1 秒)
-- out/final/ に 5 角度 × 昼夜の静止画 10 枚(3840×2160、160 サンプル。⑨の 2 回目の直しを入れて描き直し済み)
-- out/hanazono_orbit.mp4: 一周の動画(30.0 秒、1920×1080、30 コマ/秒、昼)
-- docs/compare/: 参考写真と並べた比較 9 組と、作者・ライセンスの表
-- docs/remaining.md: 残った違いとできなかったこと
-- docs/lessons.md: 今回の学び。これをもとにスキル `blender-real-building`(~/.claude/skills/)を作った(試験は流さなくてよいと本人の判断)
+3 回目に直したこと(詳しくは docs/remaining.md の 13〜22):
+中継風カメラの柱、生駒山の距離、雲、霞、南の町と近鉄の線路、マンションと町工場、夜の窓の明かり、夜空、
+メインスタンドのガラスの階と屋根の太さ、正面のタイルの並び、夜の外観の七色のライトアップ。
 
-## 最後の確認で見つけた気になる所(直していない)
+## 次にやること(引き継ぎ用)
 
-- 中継風(broadcast)の昼夜: 右手前にメインスタンドの屋根の柱が大きく写り、画面の 1 割ほどを塞ぐ。カメラを柱の間へ 2〜3 m ずらせば消える(scripts/hz/cameras.py の "broadcast")
-- 中継風の昼: 奥の生駒山が大きく、空の半分近くを占める。実物の写真より山が近く見える(exterior.py の _mountain)
-- 動画: 一周のあいだ家並みが地平線まで続き、少し単調。遠くの家を減らすか、もやを足すと落ち着く
-
-直すなら: 上の 2 か所を直して `./run.sh build && SAMPLES=160 ./run.sh stills`(10 枚で約 1 時間半)。動画も描き直すなら `./run.sh video`(約 5 時間)。
+1. `pgrep -fl "orbit.py|render.py|compare.py"` で動いているか確かめる。動いていれば待つ(二重に流さない)
+2. 止まっていたら、できていない所から流し直す:
+   - docs/compare/ の画像が古い → `./run.sh compare`
+   - out/final/ の更新時刻が 2026-11-17 夜より古い → `SAMPLES=160 caffeinate -i ./run.sh stills`
+   - out/hanazono_orbit.mp4 が古い、または out/orbit_frames_day/ にコマが残っている → `caffeinate -i ./run.sh video`(続きから描く)
+3. 動画は数コマ、静止画は昼夜 1 枚ずつ(できれば exterior_night も)開いて確かめる
+4. 本人に日本語で短く報告し、このファイルを「完了」に書き直してコミット・push
 
 ## これまでに終わったこと
 
