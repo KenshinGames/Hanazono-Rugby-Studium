@@ -5,41 +5,30 @@
 
 ## 今の段階
 
-**①〜⑧完了。⑨見比べの 1 回目が済み、仕上げの静止画 10 枚(out/final)も描いた。**
-**⑨の 2 回目も済み(山、正面のタイル、光のにじみ、カメラ)。**
-**今やっていること: 一周の動画(900 コマ、4 時間弱)を裏で描いている。終わったら続けて静止画 10 枚を描き直す。**
-本人から「進めて」の返事をもらっている(2026-11-17)。段階ごとに止まらずに最後まで進める。
+**完了(2026-11-17)。** 終わりの条件 5 つはすべて満たした。
 
-## 終わったこと
+- `./run.sh build` で build/hanazono.blend ができる(約 1 秒)
+- out/final/ に 5 角度 × 昼夜の静止画 10 枚(3840×2160、160 サンプル。⑨の 2 回目の直しを入れて描き直し済み)
+- out/hanazono_orbit.mp4: 一周の動画(30.0 秒、1920×1080、30 コマ/秒、昼)
+- docs/compare/: 参考写真と並べた比較 9 組と、作者・ライセンスの表
+- docs/remaining.md: 残った違いとできなかったこと
+- docs/lessons.md: 今回の学び。これをもとにスキル `blender-real-building`(~/.claude/skills/)を作った(試験は流さなくてよいと本人の判断)
+
+## 最後の確認で見つけた気になる所(直していない)
+
+- 中継風(broadcast)の昼夜: 右手前にメインスタンドの屋根の柱が大きく写り、画面の 1 割ほどを塞ぐ。カメラを柱の間へ 2〜3 m ずらせば消える(scripts/hz/cameras.py の "broadcast")
+- 中継風の昼: 奥の生駒山が大きく、空の半分近くを占める。実物の写真より山が近く見える(exterior.py の _mountain)
+- 動画: 一周のあいだ家並みが地平線まで続き、少し単調。遠くの家を減らすか、もやを足すと落ち着く
+
+直すなら: 上の 2 か所を直して `./run.sh build && SAMPLES=160 ./run.sh stills`(10 枚で約 1 時間半)。動画も描き直すなら `./run.sh video`(約 5 時間)。
+
+## これまでに終わったこと
 
 - ①資料調べと計画(docs/reference.md、docs/plan.md)
-- ②グラウンド scripts/hz/pitch.py / ③スタンド stands.py(断面は config/dimensions.json、共通の計算は layout.py)/ ④屋根 roof.py
-- ⑤座席 seats.py(21,555 席、東に青の HANAZONO)と細部 details.py
-- ⑥映像装置 screen.py、照明 lights.py(塔 4 基、屋根先端の投光器、夜の光は night_lights コレクション)
-- ⑦外側 exterior.py(スクラムスクリーン、外壁、広場、家並み、木、山、夜の外観の光)、架空の看板 signage.py
-- ⑧質感 materials.py、光 sky.py(昼は太陽の方位 228°・高度 47°、夜は濃い青の空+投光器)
-- ⑨の 1 回目: scripts/compare.py で 9 組の比較を docs/compare/ に。直した 10 点と残った違いは docs/remaining.md
-- 仕上げの静止画: out/final/ に 5 角度 × 昼夜の 10 枚(3840×2160、200 サンプル)
-- 一周の動画のスクリプト scripts/orbit.py(4 コマで試した。1 コマ約 15 秒、900 コマで 4 時間弱)
-
-## 次にやること(引き継ぎ用。別のモデルやセッションはここから)
-
-2026-11-17 15:00 の時点: 一周の動画を裏で描いている(900 コマのうち 489 コマ、1 コマ約 20 秒)。
-同じコマンドの続きで、静止画 10 枚の描き直し(`SAMPLES=160 ./run.sh stills`)が自動で始まる。
-
-1. **動いているかを確かめる**: `pgrep -fl "orbit.py|render.py"`。動いていれば待つ(二重に流さない)
-2. **動画**: out/hanazono_orbit.mp4 があれば完成。なくて何も動いていなければ `caffeinate -i ./run.sh video`(out/orbit_frames_day/ の続きから描く)
-3. **静止画**: out/final/ の 10 枚の更新時刻が動画より新しければ描き直し済み。そうでなければ `SAMPLES=160 caffeinate -i ./run.sh stills`(夜の外観 exterior_night だけ 47 分かかったことがある)
-4. **確かめる**(本人の指定。枠が少ないので最小限に):
-   - 動画から数コマだけ切り出して開く: `ffmpeg -ss 5 -i out/hanazono_orbit.mp4 -frames:v 1 out/v05.jpg`(5、15、25 秒あたり)。長さが約 30 秒かも見る(`ffprobe`)
-   - 静止画は昼 1 枚、夜 1 枚だけ開く(小さくしてから。例: `ffmpeg -i out/final/broadcast_day.png -vf scale=1600:-1 out/chk_day.jpg`)。broadcast と from_seat はカメラを置き直したので、前に箱や柱がないかを見る
-5. **終わりの条件を短く報告する**(下の 5 つ。満たしたか・満たしていないか)
-   - スクリプトを最初から流すと .blend ができる → `./run.sh build` で確認済み
-   - 5 つの角度 × 昼夜の画像が out/final/ にある
-   - 30 秒ほどの一周の動画が out/ にある
-   - 参考写真と並べた比較が docs/compare/ にある → 9 組、済み
-   - 残った違いとできなかったことの一覧がある → docs/remaining.md、済み
-6. **このファイルを「完了」に書き直し、コミットして push して終わり**。スキルの試験(blender-real-building)は流さなくてよいと本人から言われている
+- ②グラウンド pitch.py / ③スタンド stands.py・layout.py / ④屋根 roof.py / ⑤座席 seats.py・細部 details.py
+- ⑥映像装置 screen.py、照明 lights.py / ⑦外側 exterior.py、架空の看板 signage.py
+- ⑧質感 materials.py、光 sky.py / ⑨見比べ 2 回(compare.py、直した 12 点は docs/remaining.md)
+- 仕上げの静止画と動画(orbit.py)
 
 ## 自分で決めたこと
 
