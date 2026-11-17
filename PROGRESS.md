@@ -22,14 +22,24 @@
 - 仕上げの静止画: out/final/ に 5 角度 × 昼夜の 10 枚(3840×2160、200 サンプル)
 - 一周の動画のスクリプト scripts/orbit.py(4 コマで試した。1 コマ約 15 秒、900 コマで 4 時間弱)
 
-## 次にやること
+## 次にやること(引き継ぎ用。別のモデルやセッションはここから)
 
-1. 動画が途中で止まっていたら `./run.sh video` をもう一度流す(out/orbit_frames_day/ のコマの続きから描く)。できあがりは out/hanazono_orbit.mp4
-2. そのあと `SAMPLES=160 ./run.sh stills` で out/final の 10 枚を描き直す(⑨の 2 回目の直しを入れるため)
-3. 動画と静止画を開いて確かめる。おかしな所があれば直して描き直す
-4. docs/remaining.md を見直して、コミット・push
+2026-11-17 15:00 の時点: 一周の動画を裏で描いている(900 コマのうち 489 コマ、1 コマ約 20 秒)。
+同じコマンドの続きで、静止画 10 枚の描き直し(`SAMPLES=160 ./run.sh stills`)が自動で始まる。
 
-今回の学び(進め方、つまずき、使い回せるスクリプト)は docs/lessons.md にまとめてある。
+1. **動いているかを確かめる**: `pgrep -fl "orbit.py|render.py"`。動いていれば待つ(二重に流さない)
+2. **動画**: out/hanazono_orbit.mp4 があれば完成。なくて何も動いていなければ `caffeinate -i ./run.sh video`(out/orbit_frames_day/ の続きから描く)
+3. **静止画**: out/final/ の 10 枚の更新時刻が動画より新しければ描き直し済み。そうでなければ `SAMPLES=160 caffeinate -i ./run.sh stills`(夜の外観 exterior_night だけ 47 分かかったことがある)
+4. **確かめる**(本人の指定。枠が少ないので最小限に):
+   - 動画から数コマだけ切り出して開く: `ffmpeg -ss 5 -i out/hanazono_orbit.mp4 -frames:v 1 out/v05.jpg`(5、15、25 秒あたり)。長さが約 30 秒かも見る(`ffprobe`)
+   - 静止画は昼 1 枚、夜 1 枚だけ開く(小さくしてから。例: `ffmpeg -i out/final/broadcast_day.png -vf scale=1600:-1 out/chk_day.jpg`)。broadcast と from_seat はカメラを置き直したので、前に箱や柱がないかを見る
+5. **終わりの条件を短く報告する**(下の 5 つ。満たしたか・満たしていないか)
+   - スクリプトを最初から流すと .blend ができる → `./run.sh build` で確認済み
+   - 5 つの角度 × 昼夜の画像が out/final/ にある
+   - 30 秒ほどの一周の動画が out/ にある
+   - 参考写真と並べた比較が docs/compare/ にある → 9 組、済み
+   - 残った違いとできなかったことの一覧がある → docs/remaining.md、済み
+6. **このファイルを「完了」に書き直し、コミットして push して終わり**。スキルの試験(blender-real-building)は流さなくてよいと本人から言われている
 
 ## 自分で決めたこと
 
