@@ -1,5 +1,6 @@
 """昼と夜の光。描く直前に呼ぶ(1 つの .blend で両方に切り替えられる)。"""
 import math
+import os
 
 import bpy
 from mathutils import Vector
@@ -131,9 +132,8 @@ def _glare(scene, on):
             nt.interface.new_socket("Image", in_out="OUTPUT", socket_type="NodeSocketColor")
             rl = nt.nodes.new("CompositorNodeRLayers")
             gl = nt.nodes.new("CompositorNodeGlare")
-            print("[glare] 入力:", [(i.name, getattr(i, "default_value", None)) for i in gl.inputs])
             out = nt.nodes.new("NodeGroupOutput")
-            for key, val in (("Type", "Fog Glow"), ("Quality", "High"), ("Threshold", 3.0), ("Strength", 0.8), ("Size", 0.6)):
+            for key, val in (("Type", "Fog Glow"), ("Quality", "High"), ("Threshold", float(os.environ.get("HZ_GT", 6.0))), ("Strength", float(os.environ.get("HZ_GS", 1.0))), ("Size", float(os.environ.get("HZ_GZ", 1.0)))):
                 try:
                     gl.inputs[key].default_value = val
                 except Exception as e:

@@ -191,8 +191,8 @@ def _scrum_tiles():
         elif bval is not None:
             n.inputs[1].default_value = bval
         return n.outputs[0]
-    yy = math("DIVIDE", sep.outputs["Y"], 1.15)
-    zz = math("DIVIDE", sep.outputs["Z"], 2.3)
+    yy = math("DIVIDE", sep.outputs["Y"], 0.8)
+    zz = math("DIVIDE", sep.outputs["Z"], 1.6)
     a = math("ADD", yy, b_sock=zz)
     bb = math("SUBTRACT", yy, b_sock=zz)
     fa, fb = math("FLOOR", a), math("FLOOR", bb)
@@ -267,7 +267,7 @@ _builders = {
     "asphalt_dark": _noisy("asphalt_dark", srgb(66, 66, 70), 0.95, scale=0.5, amount=0.15),
     "leaf_a": _noisy("leaf_a", srgb(52, 92, 40), 0.9, scale=1.5, amount=0.35),
     "leaf_b": _noisy("leaf_b", srgb(70, 108, 46), 0.9, scale=1.5, amount=0.35),
-    "mountain": _noisy("mountain", srgb(52, 76, 74), 1.0, scale=0.004, amount=0.15),
+    "mountain": _noisy("mountain", srgb(44, 64, 66), 1.0, scale=0.004, amount=0.15),
     "grass": _grass,
     "concrete": _noisy("concrete", srgb(150, 148, 142), 0.85, scale=0.8, amount=0.10, bump=0.15),
     "concrete_dark": _noisy("concrete_dark", srgb(72, 72, 74), 0.9, scale=0.8, amount=0.12, bump=0.15),

@@ -345,8 +345,8 @@ def _mountain(cfg, c):
         return max(60.0, h)
     for (a, b) in zip(xs, xs[1:]):
         ha, hb = hgt(a), hgt(b)
-        mb.face(((b, -1900, 0), (a, -1900, 0), (a, -3000, ha), (b, -3000, hb)), mat)
-        mb.face(((b, -3000, hb), (a, -3000, ha), (a, -3800, ha * 0.9), (b, -3800, hb * 0.9)), mat)
+        mb.face(((b, -2400, 0), (a, -2400, 0), (a, -3600, ha), (b, -3600, hb)), mat)
+        mb.face(((b, -3600, hb), (a, -3600, ha), (a, -4400, ha * 0.9), (b, -4400, hb * 0.9)), mat)
     mb.build("mountain", c, smooth=True)
 
 
