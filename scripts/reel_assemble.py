@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 FPS = 24
 W, H = 1080, 1920
-SHOTS = [(1, "night", 1.5), (2, "day", 3.5), (3, "day", 4.0), (4, "day", 3.0), (5, "day", 3.0), (6, "day", 3.0),
+SHOTS = [(1, "day", 1.5), (2, "day", 3.5), (3, "day", 4.0), (4, "day", 3.0), (5, "day", 3.0), (6, "day", 3.0),
          (7, "both", 3.0), (8, "night", 2.0), (9, "night", 5.0), (10, "night", 4.0), (11, "night", 3.0), (12, "night", 5.0)]
 TOTAL = sum(s[2] for s in SHOTS)
 CARD_T = TOTAL - 2.6          # アイコンが出始める時刻
