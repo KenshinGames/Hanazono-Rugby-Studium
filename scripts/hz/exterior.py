@@ -276,16 +276,33 @@ def _railway(cfg, c):
     for o in (-7.5, 7.5):
         mb.face((P(-60, o - 2.5, 4.5), P(140, o - 2.5, 4.5), P(140, o + 2.5, 4.5), P(-60, o + 2.5, 4.5)), M.get("roof_sheet"))
         mb.face((P(-60, o - 2.5, 1.0), P(140, o - 2.5, 1.0), P(140, o + 2.5, 1.0), P(-60, o + 2.5, 1.0)), M.get("concrete"))
-    # 電車を 1 本(6 両、駅の東)
+    mb.build("railway", c)
+    _train(P, c)
+
+
+TRAIN_T0 = 260.0     # 電車の先頭の位置(線路に沿った距離)。動画では location を線路の向きに動かす
+
+
+def _train(P, c):
+    """電車を 1 本(6 両)。動かせるように線路とは別の物にする。夜は窓が灯る。"""
+    tb = MB()
+    win = M.emissive("train_window", (1.0, 0.9, 0.72, 1), 0.0, 6.0, base=(0.05, 0.06, 0.07, 1))
+    o0 = -2.9
     for j in range(6):
-        ta = 260 + j * 20.5
-        q = [P(ta, -2.9 - 1.4, 0.5), P(ta + 20, -2.9 - 1.4, 0.5), P(ta + 20, -2.9 + 1.4, 0.5), P(ta, -2.9 + 1.4, 0.5)]
+        ta = TRAIN_T0 + j * 20.5
+        q = [P(ta, o0 - 1.4, 0.5), P(ta + 20, o0 - 1.4, 0.5), P(ta + 20, o0 + 1.4, 0.5), P(ta, o0 + 1.4, 0.5)]
         top = [(p[0], p[1], 4.1) for p in q]
         for i in range(4):
             jj = (i + 1) % 4
-            mb.face((q[i], q[jj], top[jj], top[i]), M.get("train_body"))
-        mb.face(top, M.get("roof_a"))
-    mb.build("railway", c)
+            tb.face((q[i], q[jj], top[jj], top[i]), M.get("train_body"))
+        tb.face(top, M.get("roof_a"))
+        # 両側の窓の帯(車体の 3 cm 外)
+        for side in (-1, 1):
+            o = o0 + side * 1.43
+            a, b = ta + 1.2, ta + 18.8
+            quad = (P(a, o, 1.7), P(b, o, 1.7), P(b, o, 2.75), P(a, o, 2.75))
+            tb.face(quad if side < 0 else tuple(reversed(quad)), win)
+    tb.build("train", c)
 
 
 # ---------------------------------------------------------------- 木・家・山

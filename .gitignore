@@ -158,3 +158,6 @@ build/
 refs/
 __pycache__/
 .DS_Store
+
+# 宣伝動画用のアイコン(各アプリの商標。描くたびにアプリから取り出す)
+assets/
