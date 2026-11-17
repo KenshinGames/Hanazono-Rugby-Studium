@@ -63,10 +63,22 @@ def _west_block(c):
     mb.box(u0, un, d0, bb["d1"], 0.0, bb["z_top"], wall)
     mb.box(un, u1, d0, bb["d1_north"], 0.0, bb["z_top"], wall)
     # 中央のガラスの箱(VIP・放送席)。前へ少し張り出す
-    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.3, d0 + 0.05, bb["box_z0"] + 1.0, bb["z_top"],
-           M.emissive("box_glass", (1.0, 0.82, 0.6, 1), 0.0, 1.2, base=(0.02, 0.028, 0.035, 1)))
-    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.35, d0 + 0.05, z0, bb["box_z0"] + 1.0, M.get("concrete"))
-    mb.box(bb["box_u0"] - 0.3, bb["box_u1"] + 0.3, d0 - 0.6, d0, bb["z_top"], bb["z_top"] + 0.35, M.get("dark_steel"))
+    ga, gb = z0 + 1.1, bb["z_top"] - 0.45
+    glass = M.emissive("box_glass", (1.0, 0.82, 0.6, 1), 0.0, 1.2, base=(0.02, 0.028, 0.035, 1))
+    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.3, d0 + 0.05, ga, gb, glass)
+    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.45, d0 + 0.05, z0, ga, M.get("concrete_light"))
+    # ひさし(暗い色の帯)
+    mb.box(bb["box_u0"] - 0.3, bb["box_u1"] + 0.3, d0 - 1.4, d0, gb, bb["z_top"] + 0.35, M.get("dark_steel"))
+    # 方立て(2.5 m ごと)と中桟、柱型(7.5 m ごと)
+    al = M.get("aluminium")
+    n = int(round((bb["box_u1"] - bb["box_u0"]) / 2.5))
+    for i in range(n + 1):
+        u = bb["box_u0"] + (bb["box_u1"] - bb["box_u0"]) * i / n
+        if i % 3 == 0:
+            mb.box(u - 0.35, u + 0.35, d0 - 0.75, d0, z0, gb, M.get("concrete_light"))
+        else:
+            mb.box(u - 0.04, u + 0.04, d0 - 0.36, d0 - 0.3, ga, gb, al)
+    mb.box(bb["box_u0"], bb["box_u1"], d0 - 0.36, d0 - 0.3, ga + 1.1, ga + 1.16, al)
     mb.build("west_block", c)
 
 

@@ -17,6 +17,7 @@ def build():
     _ground(cfg, c)
     _trees(cfg, c)
     _town(cfg, c)
+    _railway(cfg, c)
     _mountain(cfg, c)
 
 
@@ -64,13 +65,13 @@ def _scrum_facade(cfg, c):
         b = a + P / 2
         if a < u0 or b > u1:
             continue
-        m = (M.emissive("entrance_glow", (1.0, 0.8, 0.55, 1), 0.0, 1.6, base=(0.012, 0.012, 0.014, 1))
+        m = (M.emissive("entrance_glow", (1.0, 0.86, 0.68, 1), 0.0, 4.0, base=(0.012, 0.012, 0.014, 1))
              if i % 2 == 0 else M.get("white_paint"))
         mb.face(((b - 0.5, D + 0.05, 0), (a + 0.5, D + 0.05, 0), ((a + b) / 2, D + 0.05, hq - 0.5)), m)
     mb.build("scrum_facade", c)
     # 赤い施設名
     p = xf @ Vector((X["name_u"], D + 0.75, X["name_z"]))
-    text_obj("name_sign", "HANAZONO RUGBY STADIUM", X["name_h"], M.emissive("name_red", (0.9, 0.04, 0.04, 1), 0.0, 3.0, base=M.srgb(200, 30, 36)), c, p, (-1, 0, 0),
+    text_obj("name_sign", "HANAZONO RUGBY STADIUM", X["name_h"], M.emissive("name_red", (1.0, 0.05, 0.04, 1), 0.0, 7.0, base=M.srgb(200, 30, 36)), c, p, (-1, 0, 0),
              extrude=0.12, max_width=X["name_w"])
     # 上の小さな照明のポール
     pm = MB(xf)
@@ -231,6 +232,62 @@ def _ground(cfg, c):
     ln.build("ground_lines", c)
 
 
+# ---------------------------------------------------------------- 近鉄の線路(推定)
+
+# 近鉄奈良線は球場の南を東西に走る。東花園駅(北緯 34.6646、東経 135.6178)を通り、真東へ向かう。
+# 座標に直すと、駅は (X -271, Y 868)、線は真東の向き (-0.247, -0.969)。地上を走る複線として作る(高架かどうかは未確認)。
+RAIL_P0 = (-271.0, 868.0)
+RAIL_DIR = (-0.247, -0.969)
+
+
+def _rail_dist(x, y):
+    dx, dy = x - RAIL_P0[0], y - RAIL_P0[1]
+    t = dx * RAIL_DIR[0] + dy * RAIL_DIR[1]
+    return abs(dx * RAIL_DIR[1] - dy * RAIL_DIR[0])
+
+
+def _railway(cfg, c):
+    mb = MB()
+    ux, uy = RAIL_DIR
+    nx, ny = -uy, ux          # 線に直角
+
+    def P(t, o, z):
+        return (RAIL_P0[0] + ux * t + nx * o, RAIL_P0[1] + uy * t + ny * o, z)
+    t0, t1 = -900.0, 2300.0
+    # 道床
+    mb.face((P(t0, -6, 0.05), P(t1, -6, 0.05), P(t1, 6, 0.05), P(t0, 6, 0.05)), M.get("ballast"))
+    # レール 4 本
+    for o in (-2.9, -1.5, 1.5, 2.9):
+        oo = o + (0.0 if abs(o) > 2 else 0.0)
+        mb.face((P(t0, oo - 0.04, 0.25), P(t1, oo - 0.04, 0.25), P(t1, oo + 0.04, 0.25), P(t0, oo + 0.04, 0.25)), M.get("rail"))
+    # 架線柱(50 m ごと)と架線
+    k = int((t1 - t0) / 50)
+    for i in range(k + 1):
+        t = t0 + i * 50
+        for o in (-5.5, 5.5):
+            mb.cyl(P(t, o, 0), P(t, o, 7.5), 0.15, M.get("grey_steel"), n=6)
+        mb.bar(P(t, -5.5, 7.2), P(t, 5.5, 7.2), 0.15, 0.25, M.get("grey_steel"))
+    for o in (-2.2, 2.2):
+        mb.cyl(P(t0, o, 5.6), P(t1, o, 5.6), 0.02, M.get("dark_steel"), n=4)
+    # 柵
+    for o in (-8.0, 8.0):
+        mb.face((P(t0, o, 0), P(t1, o, 0), P(t1, o, 1.6), P(t0, o, 1.6)), M.get("grey_steel"))
+    # 東花園駅のホーム屋根(推定の大きさ)
+    for o in (-7.5, 7.5):
+        mb.face((P(-60, o - 2.5, 4.5), P(140, o - 2.5, 4.5), P(140, o + 2.5, 4.5), P(-60, o + 2.5, 4.5)), M.get("roof_sheet"))
+        mb.face((P(-60, o - 2.5, 1.0), P(140, o - 2.5, 1.0), P(140, o + 2.5, 1.0), P(-60, o + 2.5, 1.0)), M.get("concrete"))
+    # 電車を 1 本(6 両、駅の東)
+    for j in range(6):
+        ta = 260 + j * 20.5
+        q = [P(ta, -2.9 - 1.4, 0.5), P(ta + 20, -2.9 - 1.4, 0.5), P(ta + 20, -2.9 + 1.4, 0.5), P(ta, -2.9 + 1.4, 0.5)]
+        top = [(p[0], p[1], 4.1) for p in q]
+        for i in range(4):
+            jj = (i + 1) % 4
+            mb.face((q[i], q[jj], top[jj], top[i]), M.get("train_body"))
+        mb.face(top, M.get("roof_a"))
+    mb.build("railway", c)
+
+
 # ---------------------------------------------------------------- 木・家・山
 
 def _blob(mb, cx, cy, cz, rx, rz, mat, seg=7, rings=4):
@@ -277,12 +334,34 @@ def _town(cfg, c):
     walls = [M.get("house_a"), M.get("house_b"), M.get("house_c")]
     roofs = [M.get("roof_a"), M.get("roof_b"), M.get("roof_c")]
 
-    def house(x, y, w, d, h, rot):
+    aparts = [M.get("apart_a"), M.get("apart_b")]
+    froof, fwall = M.get("factory_roof"), M.get("factory_wall")
+
+    def factory(x, y, w, d, h, rot):
+        ca, sa = math.cos(rot), math.sin(rot)
+
+        def T(px, py, pz):
+            return (x + px * ca - py * sa, y + px * sa + py * ca, pz)
+        b = [T(-w / 2, -d / 2, 0), T(w / 2, -d / 2, 0), T(w / 2, d / 2, 0), T(-w / 2, d / 2, 0)]
+        t = [(p[0], p[1], h) for p in b]
+        for i in range(4):
+            j = (i + 1) % 4
+            mb.face((b[i], b[j], t[j], t[i]), fwall)
+        # ゆるい切妻の金属屋根
+        r0, r1 = T(-w / 2, 0, h + d * 0.12), T(w / 2, 0, h + d * 0.12)
+        mb.face((t[0], t[1], r1, r0), froof)
+        mb.face((t[2], t[3], r0, r1), froof)
+        mb.face((t[1], t[2], r1), fwall)
+        mb.face((t[3], t[0], r0), fwall)
+
+    def house(x, y, w, d, h, rot, apart=False):
         ca, sa = math.cos(rot), math.sin(rot)
 
         def T(px, py, pz):
             return (x + px * ca - py * sa, y + px * sa + py * ca, pz)
         wm, rm = walls[rnd.randrange(3)], roofs[rnd.randrange(3)]
+        if apart:
+            wm, rm = aparts[rnd.randrange(2)], M.get("concrete_dark")
         b = [T(-w / 2, -d / 2, 0), T(w / 2, -d / 2, 0), T(w / 2, d / 2, 0), T(-w / 2, d / 2, 0)]
         t = [(p[0], p[1], h) for p in b]
         for i in range(4):
@@ -308,7 +387,11 @@ def _town(cfg, c):
             t = max(0, min(1, ((x - p[0]) * dx + (y - p[1]) * dy) / L2))
             if math.hypot(x - p[0] - t * dx, y - p[1] - t * dy) < 12:
                 return True
-        if x < -215 and -200 < y < 200:
+        # 南の公園(花園中央公園)の芝生だけを空ける。その先は町
+        if -430 < x <= -215 and -200 < y < 200:
+            return True
+        # 近鉄の線路の近く
+        if _rail_dist(x, y) < 16:
             return True
         return False
 
@@ -322,10 +405,16 @@ def _town(cfg, c):
             dist = math.hypot(x, y)
             if dist > 1400:
                 continue
-            if rnd.random() < 0.02 and dist > 260:
-                house(x, y, rnd.uniform(14, 26), rnd.uniform(10, 14), rnd.uniform(12, 24), rnd.choice((0, math.pi / 2)) + 0.25)
+            rot = rnd.choice((0, math.pi / 2)) + 0.25
+            r = rnd.random()
+            if r < 0.035 and dist > 230:
+                # マンション(5〜11 階)
+                house(x, y, rnd.uniform(18, 34), rnd.uniform(10, 13), rnd.choice((15.0, 18.0, 21.0, 24.0, 30.0, 33.0)), rot, apart=True)
+            elif r < 0.10 and dist > 200:
+                # 町工場(東大阪らしい低い大きな建物)
+                factory(x, y, rnd.uniform(16, 26), rnd.uniform(12, 20), rnd.uniform(6.0, 9.0), rot)
             else:
-                house(x, y, rnd.uniform(7, 11), rnd.uniform(6, 9), rnd.uniform(5.5, 7.5), rnd.choice((0, math.pi / 2)) + 0.25)
+                house(x, y, rnd.uniform(7, 11), rnd.uniform(6, 9), rnd.uniform(5.5, 7.5), rot)
     mb.build("town", c)
 
 
@@ -340,13 +429,13 @@ def _mountain(cfg, c):
     def hgt(x):
         t = x / 1000.0
         # 生駒山(642 m)は球場の東南東。北へ向かって低くなる
-        h = 300 + 340 * math.exp(-((x + 900) / 2600.0) ** 2)
+        h = 290 + 350 * math.exp(-((x + 150) / 3000.0) ** 2) - 60 * max(0.0, x / 6000.0)
         h += 40 * math.sin(t * 0.9 + ph[1]) + 22 * math.sin(t * 2.1 + ph[2]) + 10 * math.sin(t * 5.0 + ph[3])
         return max(60.0, h)
     for (a, b) in zip(xs, xs[1:]):
         ha, hb = hgt(a), hgt(b)
-        mb.face(((b, -2400, 0), (a, -2400, 0), (a, -3600, ha), (b, -3600, hb)), mat)
-        mb.face(((b, -3600, hb), (a, -3600, ha), (a, -4400, ha * 0.9), (b, -4400, hb * 0.9)), mat)
+        mb.face(((b, -3300, 0), (a, -3300, 0), (a, -4900, ha), (b, -4900, hb)), mat)
+        mb.face(((b, -4900, hb), (a, -4900, ha), (a, -5800, ha * 0.9), (b, -5800, hb * 0.9)), mat)
     mb.build("mountain", c, smooth=True)
 
 
@@ -371,7 +460,7 @@ def _night_exterior(cfg, xf, D, H, u0, u1):
     n = 6
     for i in range(n):
         u = u0 + (u1 - u0) * (i + 0.5) / n
-        area("facade_wash_%d" % i, xf @ Vector((u, D + 9.0, 0.6)), xf @ Vector((u, D, H * 0.55)), 3.0, 9000.0)
+        area("facade_wash_%d" % i, xf @ Vector((u, D + 9.0, 0.6)), xf @ Vector((u, D, H * 0.55)), 3.0, 700.0)
     k = cfg["stands"]["corners"]
     X = cfg["exterior"]
     for sy in (-1, 1):
@@ -381,7 +470,7 @@ def _night_exterior(cfg, xf, D, H, u0, u1):
             r = X["corner_r"]
             loc = (cx + (r + 9) * math.cos(ang), cy + (r + 9) * math.sin(ang), 0.6)
             tgt = (cx + r * math.cos(ang), cy + r * math.sin(ang), X["corner_h"] * 0.5)
-            area("corner_wash_%d_%d" % (sy, a), loc, tgt, 3.0, 7000.0)
+            area("corner_wash_%d_%d" % (sy, a), loc, tgt, 3.0, 600.0)
     # 広場の街灯(昼も柱は見える)
     mb = MB()
     lamp = M.emissive("street_lamp", (1.0, 0.92, 0.8, 1), 0.0, 40.0, base=(0.8, 0.8, 0.78, 1))

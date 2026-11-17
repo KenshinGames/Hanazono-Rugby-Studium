@@ -28,6 +28,7 @@ def main():
         t = time.time()
         mod.build()
         print("[build] %-9s %.1f 秒" % (name, time.time() - t))
+    materials.haze_all()
     out = os.path.join(config.ROOT, "build")
     os.makedirs(out, exist_ok=True)
     path = os.path.join(out, "hanazono.blend")

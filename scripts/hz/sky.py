@@ -38,6 +38,13 @@ def _set_night_collections(night):
             c.hide_render = not night
         if c.name.startswith("day_"):
             c.hide_render = night
+    # ラベル "dn 昼 夜" の Value ノード(窓の明かり、虹色の帯、霞)を切り替える
+    for m in bpy.data.materials:
+        if m.use_nodes:
+            for n in m.node_tree.nodes:
+                if n.type == "VALUE" and n.label.startswith("dn "):
+                    parts = n.label.split()
+                    n.outputs[0].default_value = float(parts[2] if night else parts[1])
     # 光る面(投光器のレンズ、映像装置)は夜だけ強くする
     for m in bpy.data.materials:
         if "emit_day" in m and m.use_nodes:
@@ -62,7 +69,7 @@ def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION):
     bg.inputs["Strength"].default_value = 0.11
     out = nt.nodes.new("ShaderNodeOutputWorld")
     nt.links.new(sky.outputs[0], bg.inputs[0])
-    nt.links.new(bg.outputs[0], out.inputs[0])
+    nt.links.new(_clouds(nt, bg.outputs[0]), out.inputs[0])
     _set_night_collections(False)
     scene.view_settings.exposure = 0.1
     _glare(scene, False)
@@ -70,14 +77,85 @@ def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION):
 
 def setup_night(scene):
     w, nt = _world(scene)
-    bg = nt.nodes.new("ShaderNodeBackground")
-    bg.inputs["Color"].default_value = (0.020, 0.032, 0.075, 1)   # 日が落ちたあとの濃い青
+    # 日が落ちたあとの濃い青。地平線は街の明かりで少し明るく暖かい
+    N, L = nt.nodes, nt.links
+    tc = N.new("ShaderNodeTexCoord")
+    sep = N.new("ShaderNodeSeparateXYZ")
+    L.new(tc.outputs["Generated"], sep.inputs[0])
+    mr = N.new("ShaderNodeMapRange")
+    mr.inputs["From Min"].default_value = 0.0
+    mr.inputs["From Max"].default_value = 0.35
+    L.new(sep.outputs["Z"], mr.inputs["Value"])
+    mx = N.new("ShaderNodeMix"); mx.data_type = "RGBA"
+    mx.inputs["A"].default_value = (0.060, 0.050, 0.060, 1)
+    mx.inputs["B"].default_value = (0.016, 0.026, 0.062, 1)
+    L.new(mr.outputs["Result"], mx.inputs["Factor"])
+    bg = N.new("ShaderNodeBackground")
     bg.inputs["Strength"].default_value = 0.8
-    out = nt.nodes.new("ShaderNodeOutputWorld")
-    nt.links.new(bg.outputs[0], out.inputs[0])
+    L.new(mx.outputs["Result"], bg.inputs["Color"])
+    out = N.new("ShaderNodeOutputWorld")
+    L.new(bg.outputs[0], out.inputs[0])
     _set_night_collections(True)
     scene.view_settings.exposure = 0.0
     _glare(scene, True)
+
+
+CLOUD_BRIGHT = float(os.environ.get("HZ_CLOUD", 1.6))
+CLOUD_COVER = float(os.environ.get("HZ_COVER", 0.5))
+
+
+def _clouds(nt, sky_shader):
+    """空に雲を足す。視線の向きを高さ一定の面に映して雲の模様を作る。地平線の近くは薄く消す。"""
+    N, L = nt.nodes, nt.links
+    tc = N.new("ShaderNodeTexCoord")
+    sep = N.new("ShaderNodeSeparateXYZ")
+    L.new(tc.outputs["Generated"], sep.inputs[0])
+
+    def mth(op, a, v=None, bs=None):
+        n = N.new("ShaderNodeMath"); n.operation = op
+        L.new(a, n.inputs[0])
+        if bs is not None:
+            L.new(bs, n.inputs[1])
+        elif v is not None:
+            n.inputs[1].default_value = v
+        return n.outputs[0]
+    zc = mth("MAXIMUM", sep.outputs["Z"], 0.04)
+    u = mth("DIVIDE", sep.outputs["X"], bs=zc)
+    v = mth("DIVIDE", sep.outputs["Y"], bs=zc)
+    cv = N.new("ShaderNodeCombineXYZ")
+    L.new(u, cv.inputs[0]); L.new(v, cv.inputs[1])
+    nz = N.new("ShaderNodeTexNoise"); nz.noise_dimensions = "3D"
+    nz.inputs["Scale"].default_value = 0.9
+    nz.inputs["Detail"].default_value = 8.0
+    nz.inputs["Roughness"].default_value = 0.58
+    L.new(cv.outputs[0], nz.inputs["Vector"])
+    cover = N.new("ShaderNodeMapRange")
+    cover.inputs["From Min"].default_value = 1.0 - CLOUD_COVER * 0.9
+    cover.inputs["From Max"].default_value = 1.0 - CLOUD_COVER * 0.9 + 0.16
+    L.new(nz.outputs["Fac"], cover.inputs["Value"])
+    fade = N.new("ShaderNodeMapRange")
+    fade.inputs["From Min"].default_value = 0.02
+    fade.inputs["From Max"].default_value = 0.22
+    L.new(sep.outputs["Z"], fade.inputs["Value"])
+    mask = mth("MULTIPLY", cover.outputs["Result"], bs=fade.outputs["Result"])
+    mask = mth("MULTIPLY", mask, 0.95)
+    # 雲の明るさにむら(下が少し灰色)
+    shade = N.new("ShaderNodeMapRange")
+    shade.inputs["To Min"].default_value = 0.62
+    shade.inputs["To Max"].default_value = 1.0
+    L.new(nz.outputs["Fac"], shade.inputs["Value"])
+    cb = N.new("ShaderNodeBackground")
+    col = N.new("ShaderNodeCombineColor")
+    for i, k in enumerate((0.97, 0.98, 1.0)):
+        mm = N.new("ShaderNodeMath"); mm.operation = "MULTIPLY"
+        L.new(shade.outputs["Result"], mm.inputs[0]); mm.inputs[1].default_value = k
+        L.new(mm.outputs[0], col.inputs[i])
+    L.new(col.outputs[0], cb.inputs["Color"])
+    cb.inputs["Strength"].default_value = CLOUD_BRIGHT
+    ms = N.new("ShaderNodeMixShader")
+    L.new(mask, ms.inputs[0])
+    L.new(sky_shader, ms.inputs[1]); L.new(cb.outputs[0], ms.inputs[2])
+    return ms.outputs[0]
 
 
 def setup_render(scene, samples=64, res=(1600, 900)):

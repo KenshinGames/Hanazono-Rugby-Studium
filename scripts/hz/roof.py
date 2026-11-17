@@ -53,7 +53,7 @@ def build():
     web = MB(xf)       # 細い材
     sheet = MB(xf)
     cols = MB(xf)
-    RC, RW, RS = 0.10, 0.055, 0.04
+    RC, RW, RS = 0.16, 0.08, 0.055
 
     for key in ("main", "north"):
         part = R[key]
