@@ -15,8 +15,16 @@ docs/compare/ の 9 組、out/final/ の静止画 10 枚、out/hanazono_orbit.mp
 
 ## 次にやること(引き継ぎ用)
 
-**インスタのリール(縦 40 秒)が完成(2026-11-18)。** out/hanazono_reel.mp4(1080×1920、24 コマ/秒、音なし)。台本は docs/reel/台本.md。
-- 描き直すとき: `caffeinate -i blender -b build/hanazono.blend -P scripts/reel.py --`(続きから描ける、約 10 時間)→ `python3 scripts/reel_assemble.py`
+**インスタのリール(縦 40 秒)を第 3 版に作り直し中(2026-11-18 夜〜)。** 台本は docs/reel/台本.md(本人の感想と直しの表あり)。
+第 2 版(out/hanazono_reel.mp4、昼で始まり昼夜を重ねたもの)は本人がドライブで見て、ぶつ切り・速すぎ・照明の時刻がずれている、と感想をくれた。
+- 第 3 版でしたこと: 9 カットに組み直し、動きを一定の速さに、時刻をカットごとに進める(scripts/hz/tod.py)、
+  夕焼けの空(雲の色・霞の色も時刻に合わせる。sky.setup_day の clouds)、生駒山を高さの格子に作り直し、山頂のテレビ塔、ロゴを冒頭に
+- 今やっていること: 試写版(縦横半分、10 サンプル、ぶれなし)を描いて本人に見てもらう
+  `caffeinate -i blender -b build/hanazono.blend -P scripts/reel.py -- --preview --samples 10`(約 30 分)→ `python3 scripts/reel_assemble.py --preview`
+  → out/hanazono_reel_preview.mp4 をドライブへ(手順はメモリの reference-gdrive-upload)
+- 次: 本人の OK のあと本番 `caffeinate -i blender -b build/hanazono.blend -P scripts/reel.py --`(続きから描ける、約 9 時間)→ `python3 scripts/reel_assemble.py`
+  コマは out/reel_v3/sNN/。第 2 版のコマ(out/reel/)は本人の OK 後に消してよい
+- 色はカットごとに reel_assemble.py の GRADE で整える(描き直さずに直せる)
 - 音楽と文字は本人がインスタのアプリで付ける
 
 ほかに頼まれたら手を付けたい候補:

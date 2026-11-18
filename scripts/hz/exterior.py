@@ -435,25 +435,78 @@ def _town(cfg, c):
     mb.build("town", c)
 
 
+MT_FOOT, MT_RIDGE, MT_BACK = -3300.0, -4900.0, -6600.0   # 山すそ、稜線、裏側の端(Y)
+MT_PEAK_X = -170.0      # 生駒山の山頂(34.678 N, 135.678 E)は球場から東北東に約 4.9 km
+
+
+def _ridge(x, ph):
+    """稜線の高さ。生駒山(642 m)が一番高く、北へ向かって低くなる。"""
+    t = x / 1000.0
+    h = 290 + 350 * math.exp(-((x + 150) / 3000.0) ** 2) - 60 * max(0.0, x / 6000.0)
+    h += 40 * math.sin(t * 0.9 + ph[1]) + 22 * math.sin(t * 2.1 + ph[2]) + 10 * math.sin(t * 5.0 + ph[3])
+    # 稜線の細かい起伏(見た目の推定)
+    h += 14 * math.sin(t * 7.3 + ph[0]) + 7 * math.sin(t * 13.0 + ph[7])
+    return max(60.0, h)
+
+
+def _mt_height(x, y, ph):
+    """山の高さ。花園の側(西)は断層の急な斜面で、斜面を下る谷と尾根を刻む。裏側はなだらか。"""
+    r = _ridge(x, ph)
+    if y >= MT_RIDGE:
+        t = (MT_FOOT - y) / (MT_FOOT - MT_RIDGE)      # すそ 0 → 稜線 1
+        if t <= 0.0:
+            return 0.0
+        base = r * (t * t * (3 - 2 * t)) ** 0.9
+    else:
+        t = (y - MT_BACK) / (MT_RIDGE - MT_BACK)      # 裏の端 0 → 稜線 1
+        base = r * (0.45 + 0.55 * t * t * (3 - 2 * t))
+        t = 1.0
+    # 谷: 斜面を下る筋。少し曲げて、まっすぐな溝に見えないようにする
+    xx = x + 160.0 * math.sin(y / 650.0 + ph[4])
+    g = 0.65 * abs(math.sin(xx / 520.0 + ph[5])) ** 0.6 + 0.35 * abs(math.sin(xx / 210.0 + ph[6])) ** 0.6
+    # 斜面の中ほどが一番深く、稜線にも浅い鞍部を残す
+    w = min(1.0, t / 0.35) * (1.0 - 0.55 * t)
+    carve = 190.0 * (1.0 - g) * w
+    return max(0.0, base - carve)
+
+
 def _mountain(cfg, c):
-    """東(-Y)の遠くの生駒山。稜線だけの板。"""
+    """東(-Y)の遠くの生駒山地。高さの格子で作る。稜線の高さと距離は実際に合わせ、谷の刻みは見た目の推定。
+    山頂にはテレビ塔の群れ(高さと並びは写真からの推定)。夜は航空障害灯が赤く光る。"""
     mb = MB()
     mat = M.get("mountain")
     rnd = random.Random(642)
-    ph = [rnd.uniform(0, 6.28) for _ in range(6)]
-    xs = list(range(-14000, 14001, 250))
-
-    def hgt(x):
-        t = x / 1000.0
-        # 生駒山(642 m)は球場の東南東。北へ向かって低くなる
-        h = 290 + 350 * math.exp(-((x + 150) / 3000.0) ** 2) - 60 * max(0.0, x / 6000.0)
-        h += 40 * math.sin(t * 0.9 + ph[1]) + 22 * math.sin(t * 2.1 + ph[2]) + 10 * math.sin(t * 5.0 + ph[3])
-        return max(60.0, h)
-    for (a, b) in zip(xs, xs[1:]):
-        ha, hb = hgt(a), hgt(b)
-        mb.face(((b, -3300, 0), (a, -3300, 0), (a, -4900, ha), (b, -4900, hb)), mat)
-        mb.face(((b, -4900, hb), (a, -4900, ha), (a, -5800, ha * 0.9), (b, -5800, hb * 0.9)), mat)
+    ph = [rnd.uniform(0, 6.28) for _ in range(8)]
+    xs = [float(v) for v in range(-14000, 14001, 80)]
+    ys = [-3100.0 - 60.0 * i for i in range(59)]           # -3100 〜 -6580
+    grid = [[_mt_height(x, y, ph) for x in xs] for y in ys]
+    for j in range(len(ys) - 1):
+        for i in range(len(xs) - 1):
+            a, b = (xs[i], ys[j], grid[j][i]), (xs[i + 1], ys[j], grid[j][i + 1])
+            cc, d = (xs[i + 1], ys[j + 1], grid[j + 1][i + 1]), (xs[i], ys[j + 1], grid[j + 1][i])
+            mb.face((b, a, d, cc), mat)
     mb.build("mountain", c, smooth=True)
+
+    # 山頂のテレビ塔。四角い先細りの塔と、先の赤い灯
+    tw = M.get("tv_tower")
+    red = M.emissive("aviation_red", (1.0, 0.06, 0.03, 1.0), 0.0, 60.0)
+    mt = MB()
+    towers = [(-30, 30, 136, 11), (15, -35, 118, 10), (-85, -10, 104, 9), (60, 20, 92, 8),
+              (-150, 35, 80, 8), (130, -15, 70, 7), (-240, -20, 58, 6)]
+    for dx, dy, h, w in towers:
+        x, y = MT_PEAK_X + dx, MT_RIDGE + dy
+        z0 = _mt_height(x, y, ph) - 4.0
+        b0, b1 = w / 2, max(0.8, w * 0.12)
+        bot = [(x - b0, y - b0, z0), (x + b0, y - b0, z0), (x + b0, y + b0, z0), (x - b0, y + b0, z0)]
+        top = [(x - b1, y - b1, z0 + h), (x + b1, y - b1, z0 + h), (x + b1, y + b1, z0 + h), (x - b1, y + b1, z0 + h)]
+        for k in range(4):
+            q = (k + 1) % 4
+            mt.face((bot[k], bot[q], top[q], top[k]), tw)
+        mt.face(top, tw)
+        # 灯は遠くから見えるよう実物より大きくしてある(6 m 角)
+        for zz in (z0 + h + 3.0, z0 + h * 0.55):
+            mt.box(x - 3, x + 3, y - 3, y + 3, zz - 3, zz + 3, red)
+    mt.build("tv_towers", c)
 
 
 def _night_exterior(cfg, xf, D, H, u0, u1):

@@ -395,6 +395,54 @@ def _scrum_tiles():
     return m
 
 
+def _mountain():
+    """遠くの山の森。常緑の濃い緑に落葉樹の茶色を混ぜ、谷(すき間)を暗くして、正面から日が当たっても尾根と谷が見えるようにする。"""
+    m = _principled("mountain", srgb(36, 60, 36), rough=1.0, spec=0.2)
+    nt = m.node_tree
+    N, L = nt.nodes, nt.links
+    b = N.get("Principled BSDF")
+    geo = N.new("ShaderNodeNewGeometry")
+
+    def noise(scale, detail):
+        n = N.new("ShaderNodeTexNoise")
+        n.inputs["Scale"].default_value = scale
+        n.inputs["Detail"].default_value = detail
+        L.new(geo.outputs["Position"], n.inputs["Vector"])
+        return n.outputs["Fac"]
+
+    def rng(src, lo, hi, f0=0.0, f1=1.0):
+        mp = N.new("ShaderNodeMapRange")
+        mp.inputs["From Min"].default_value = f0
+        mp.inputs["From Max"].default_value = f1
+        mp.inputs["To Min"].default_value = lo
+        mp.inputs["To Max"].default_value = hi
+        L.new(src, mp.inputs["Value"])
+        return mp.outputs["Result"]
+
+    def mul(a, bsock):
+        n = N.new("ShaderNodeMix"); n.data_type = "RGBA"; n.blend_type = "MULTIPLY"
+        n.inputs["Factor"].default_value = 1.0
+        L.new(a, n.inputs["A"]); L.new(bsock, n.inputs["B"])
+        return n.outputs["Result"]
+    mix = N.new("ShaderNodeMix"); mix.data_type = "RGBA"
+    mix.inputs["A"].default_value = srgb(34, 58, 34)
+    mix.inputs["B"].default_value = srgb(80, 72, 44)
+    L.new(rng(noise(0.012, 4.0), 0.0, 0.6, 0.45, 0.7), mix.inputs["Factor"])
+    col = mul(mix.outputs["Result"], rng(noise(0.0025, 6.0), 0.6, 1.4))
+    col = mul(col, rng(noise(0.03, 3.0), 0.7, 1.3))
+    ao = N.new("ShaderNodeAmbientOcclusion")
+    ao.samples = 8
+    ao.inputs["Distance"].default_value = 220.0
+    col = mul(col, rng(ao.outputs["AO"], 0.15, 1.0))
+    L.new(col, b.inputs["Base Color"])
+    bp = N.new("ShaderNodeBump")
+    bp.inputs["Strength"].default_value = 0.5
+    bp.inputs["Distance"].default_value = 4.0
+    L.new(noise(0.05, 3.0), bp.inputs["Height"])
+    L.new(bp.outputs["Normal"], b.inputs["Normal"])
+    return m
+
+
 def _brick_paving():
     m = _principled("paving_brick", srgb(140, 92, 76), rough=0.9)
     nt = m.node_tree
@@ -440,7 +488,7 @@ _builders = {
     "asphalt_dark": _noisy("asphalt_dark", srgb(66, 66, 70), 0.95, scale=0.5, amount=0.15),
     "leaf_a": _noisy("leaf_a", srgb(52, 92, 40), 0.9, scale=1.5, amount=0.35),
     "leaf_b": _noisy("leaf_b", srgb(70, 108, 46), 0.9, scale=1.5, amount=0.35),
-    "mountain": _noisy("mountain", srgb(44, 64, 66), 1.0, scale=0.004, amount=0.15),
+    "mountain": _mountain,
     "grass": _grass,
     "concrete": _noisy("concrete", srgb(150, 148, 142), 0.85, scale=0.8, amount=0.10, bump=0.15),
     "concrete_dark": _noisy("concrete_dark", srgb(72, 72, 74), 0.9, scale=0.8, amount=0.12, bump=0.15),
@@ -477,6 +525,7 @@ define("roof_under", color=srgb(214, 214, 210), rough=0.6)
 define("screen_frame", color=srgb(52, 56, 60), rough=0.5)
 define("lamp_off", color=srgb(210, 212, 205), rough=0.3)
 define("tower_pole", color=srgb(40, 36, 34), rough=0.55, metal=0.2)
+define("tv_tower", color=srgb(196, 190, 184), rough=0.5)
 define("flag_a", color=srgb(240, 240, 240), rough=0.7)
 define("flag_b", color=srgb(30, 70, 160), rough=0.7)
 define("flag_c", color=srgb(150, 30, 50), rough=0.7)

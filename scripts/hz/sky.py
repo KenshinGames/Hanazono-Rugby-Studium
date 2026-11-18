@@ -53,7 +53,8 @@ def _set_night_collections(night):
                 b.inputs["Emission Strength"].default_value = m["emit_night"] if night else m["emit_day"]
 
 
-def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION):
+def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION, bg_strength=0.11, exposure=0.1, clouds=None):
+    """clouds は夕方の雲の色 {"near": 太陽の側の色, "far": 反対側の色, "strength": 明るさ}。省くと白い雲。"""
     w, nt = _world(scene)
     v = sun_vector(az, el)
     sky = nt.nodes.new("ShaderNodeTexSky")
@@ -66,12 +67,12 @@ def setup_day(scene, az=DAY_SUN_AZIMUTH, el=DAY_SUN_ELEVATION):
     sky.aerosol_density = 1.6
     sky.ozone_density = 1.0
     bg = nt.nodes.new("ShaderNodeBackground")
-    bg.inputs["Strength"].default_value = 0.11
+    bg.inputs["Strength"].default_value = bg_strength
     out = nt.nodes.new("ShaderNodeOutputWorld")
     nt.links.new(sky.outputs[0], bg.inputs[0])
-    nt.links.new(_clouds(nt, bg.outputs[0]), out.inputs[0])
+    nt.links.new(_clouds(nt, bg.outputs[0], clouds, v), out.inputs[0])
     _set_night_collections(False)
-    scene.view_settings.exposure = 0.1
+    scene.view_settings.exposure = exposure
     _glare(scene, False)
 
 
@@ -104,8 +105,9 @@ CLOUD_BRIGHT = float(os.environ.get("HZ_CLOUD", 1.6))
 CLOUD_COVER = float(os.environ.get("HZ_COVER", 0.5))
 
 
-def _clouds(nt, sky_shader):
-    """空に雲を足す。視線の向きを高さ一定の面に映して雲の模様を作る。地平線の近くは薄く消す。"""
+def _clouds(nt, sky_shader, tint=None, sun=None):
+    """空に雲を足す。視線の向きを高さ一定の面に映して雲の模様を作る。地平線の近くは薄く消す。
+    tint を渡すと、太陽に近い雲ほど near の色、遠い雲ほど far の色にする(夕焼け)。"""
     N, L = nt.nodes, nt.links
     tc = N.new("ShaderNodeTexCoord")
     sep = N.new("ShaderNodeSeparateXYZ")
@@ -145,13 +147,31 @@ def _clouds(nt, sky_shader):
     shade.inputs["To Max"].default_value = 1.0
     L.new(nz.outputs["Fac"], shade.inputs["Value"])
     cb = N.new("ShaderNodeBackground")
-    col = N.new("ShaderNodeCombineColor")
-    for i, k in enumerate((0.97, 0.98, 1.0)):
-        mm = N.new("ShaderNodeMath"); mm.operation = "MULTIPLY"
-        L.new(shade.outputs["Result"], mm.inputs[0]); mm.inputs[1].default_value = k
-        L.new(mm.outputs[0], col.inputs[i])
-    L.new(col.outputs[0], cb.inputs["Color"])
-    cb.inputs["Strength"].default_value = CLOUD_BRIGHT
+    if tint:
+        # 太陽の向きとの近さ(0〜1)を何乗かして、太陽のまわりだけ染める
+        dp = N.new("ShaderNodeVectorMath"); dp.operation = "DOT_PRODUCT"
+        L.new(tc.outputs["Generated"], dp.inputs[0])
+        dp.inputs[1].default_value = tuple(sun)
+        k = mth("MULTIPLY", mth("ADD", dp.outputs["Value"], 1.0), 0.5)
+        k = mth("POWER", k, tint.get("power", 4.0))
+        mc = N.new("ShaderNodeMix"); mc.data_type = "RGBA"
+        L.new(k, mc.inputs["Factor"])
+        mc.inputs["A"].default_value = tuple(tint["far"]) + (1.0,)
+        mc.inputs["B"].default_value = tuple(tint["near"]) + (1.0,)
+        mul = N.new("ShaderNodeMix"); mul.data_type = "RGBA"; mul.blend_type = "MULTIPLY"
+        mul.inputs["Factor"].default_value = 1.0
+        L.new(mc.outputs["Result"], mul.inputs["A"])
+        L.new(shade.outputs["Result"], mul.inputs["B"])
+        L.new(mul.outputs["Result"], cb.inputs["Color"])
+        cb.inputs["Strength"].default_value = tint.get("strength", CLOUD_BRIGHT)
+    else:
+        col = N.new("ShaderNodeCombineColor")
+        for i, k in enumerate((0.97, 0.98, 1.0)):
+            mm = N.new("ShaderNodeMath"); mm.operation = "MULTIPLY"
+            L.new(shade.outputs["Result"], mm.inputs[0]); mm.inputs[1].default_value = k
+            L.new(mm.outputs[0], col.inputs[i])
+        L.new(col.outputs[0], cb.inputs["Color"])
+        cb.inputs["Strength"].default_value = CLOUD_BRIGHT
     ms = N.new("ShaderNodeMixShader")
     L.new(mask, ms.inputs[0])
     L.new(sky_shader, ms.inputs[1]); L.new(cb.outputs[0], ms.inputs[2])
