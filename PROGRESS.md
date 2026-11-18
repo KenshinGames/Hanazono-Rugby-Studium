@@ -15,10 +15,9 @@ docs/compare/ の 9 組、out/final/ の静止画 10 枚、out/hanazono_orbit.mp
 
 ## 次にやること(引き継ぎ用)
 
-**インスタのリール(縦 40 秒)を作っている(2026-11-18)。** 台本は docs/reel/台本.md(本人の了承済み)。
-- 試し描き(各カット 3 枚)は確認済み。本番のコマを裏で描いている(約 8 時間、out/reel/sNN_昼夜/)
-- 止まっていたら `caffeinate -i blender -b build/hanazono.blend -P scripts/reel.py --` で続きから。描き終わったら `python3 scripts/reel_assemble.py`
-- できたら out/hanazono_reel.mp4 の数コマ(つかみ、日暮れ、照明が点く所、最後のアイコン)を開いて確かめ、本人に報告
+**インスタのリール(縦 40 秒)が完成(2026-11-18)。** out/hanazono_reel.mp4(1080×1920、24 コマ/秒、音なし)。台本は docs/reel/台本.md。
+- 描き直すとき: `caffeinate -i blender -b build/hanazono.blend -P scripts/reel.py --`(続きから描ける、約 10 時間)→ `python3 scripts/reel_assemble.py`
+- 音楽と文字は本人がインスタのアプリで付ける
 
 ほかに頼まれたら手を付けたい候補:
 - 町の家が同じ形の繰り返しに見える(空撮で目立つ)。形・大きさ・屋根の色にばらつきをつける
