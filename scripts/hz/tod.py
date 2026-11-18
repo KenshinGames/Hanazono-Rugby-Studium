@@ -1,30 +1,45 @@
 """時刻ごとの光(昼下がり → 夕方 → 夕焼け → 日暮れ → 夜)。sky.py の昼と夜の間を作る。リールで使う。
 
-  tod.setup(scene, "golden")       # 空・雲・霞・窓や外観の明かりをその時刻にする
+  tod.setup(scene, "golden")       # 空・雲・霞・窓や外観の明かりをその時刻にする(太陽は 10 月中ごろの位置)
   tod.set_floodlights(on)          # 照明塔と屋根の投光器だけを点ける・消す(日暮れのカットで使う)
 
 数字はすべて試し描きを見て決めた見た目の値(実際の照度ではない)。
 """
+import math
+
 import bpy
 
-from . import sky
+from . import config, sky
 
 FLOOD_PREFIX = ("tower_light_", "roof_light_")
 
-# az, el: 太陽の方位と高度(度)。bg, exposure: 空の強さと露出。
+# 太陽の向きは実際の日付から計算する。10 月 15 日ごろ(ラグビーの季節、赤緯 -8.9 度)。
+# この日は南中が 46 度で、日の入りは方位 259 度。メインスタンド(背中が方位 256 度)のほぼ真後ろに沈む
+DECLINATION = -8.9
+
+
+def afternoon_azimuth(el):
+    """午後に太陽が高さ el(度)になるときの方位(北=0、東=90)。"""
+    lat, d = math.radians(config.load()["site"]["latitude"]), math.radians(DECLINATION)
+    c = (math.sin(math.radians(el)) - math.sin(lat) * math.sin(d)) / (math.cos(lat) * math.cos(d))
+    h = math.acos(max(-1.0, min(1.0, c)))
+    return math.degrees(math.atan2(math.sin(h), math.cos(h) * math.sin(lat) - math.tan(d) * math.cos(lat))) + 180.0
+
+
+# el: 太陽の高さ(度。方位は afternoon_azimuth で決まる)。bg, exposure: 空の強さと露出。
 # clouds: 雲の色(太陽の側 near と反対側 far)。haze: 霞の色と濃さ、山だけの濃さ。
 # lights: 窓・外観のライトアップ・街灯の点き具合(0=昼、1=夜)。floods: 投光器。
 TIMES = {
-    "late": dict(az=236.0, el=20.0, bg=0.11, exposure=0.1,
-                 clouds=dict(near=(1.0, 0.90, 0.78), far=(0.95, 0.95, 0.98), strength=1.5, power=3.0),
+    "late": dict(el=32.0, bg=0.11, exposure=0.1,
+                 clouds=dict(near=(1.0, 0.94, 0.86), far=(0.96, 0.97, 1.0), strength=1.55, power=3.0),
                  haze=(0.52, 0.55, 0.62), haze_max=0.90, mountain_haze=0.35, lights=0.0, floods=False),
-    "golden": dict(az=236.0, el=5.0, bg=0.12, exposure=0.2,
-                   clouds=dict(near=(1.0, 0.70, 0.42), far=(0.85, 0.74, 0.76), strength=1.3, power=3.0),
-                   haze=(0.46, 0.42, 0.46), haze_max=0.88, mountain_haze=0.22, lights=0.0, floods=False),
-    "sunset": dict(az=243.0, el=0.6, bg=0.16, exposure=0.5,
+    "golden": dict(el=16.0, bg=0.12, exposure=0.15,
+                   clouds=dict(near=(1.0, 0.82, 0.62), far=(0.92, 0.88, 0.90), strength=1.4, power=3.0),
+                   haze=(0.50, 0.49, 0.55), haze_max=0.88, mountain_haze=0.28, lights=0.0, floods=False),
+    "sunset": dict(el=0.6, bg=0.16, exposure=0.5,
                    clouds=dict(near=(1.0, 0.45, 0.22), far=(0.42, 0.34, 0.46), strength=0.9, power=2.0),
                    haze=(0.24, 0.17, 0.17), haze_max=0.86, mountain_haze=0.55, lights=0.35, floods=False),
-    "blue": dict(az=245.0, el=-3.5, bg=0.55, exposure=0.6,
+    "blue": dict(el=-3.5, bg=0.55, exposure=0.6,
                  clouds=dict(near=(0.55, 0.22, 0.20), far=(0.07, 0.08, 0.14), strength=0.35, power=2.0),
                  haze=(0.030, 0.036, 0.075), haze_max=0.86, mountain_haze=0.70, lights=0.85, floods=False),
     "night": None,   # sky.setup_night のまま(投光器も点く)
@@ -41,7 +56,7 @@ def setup(scene, name, **over):
         _ext_lights(1.0)
         set_floodlights(True)
         return
-    sky.setup_day(scene, az=t["az"], el=t["el"], bg_strength=t["bg"], exposure=t["exposure"], clouds=t["clouds"])
+    sky.setup_day(scene, az=afternoon_azimuth(t["el"]), el=t["el"], bg_strength=t["bg"], exposure=t["exposure"], clouds=t["clouds"])
     _set_dn(t["lights"])
     _emissive(t["lights"])
     _ext_lights(t["lights"])
