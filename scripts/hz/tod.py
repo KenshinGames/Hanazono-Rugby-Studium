@@ -30,6 +30,16 @@ def afternoon_azimuth(el):
 # clouds: 雲の色(太陽の側 near と反対側 far)。haze: 霞の色と濃さ、山だけの濃さ。
 # lights: 窓・外観のライトアップ・街灯の点き具合(0=昼、1=夜)。floods: 投光器。
 TIMES = {
+    # 朝(am=True: 太陽は東。方位は午後の方位を南北で折り返す)。ショート動画で使う
+    "dawn": dict(el=-4.5, am=True, bg=0.55, exposure=0.7,
+                 clouds=dict(near=(0.85, 0.50, 0.42), far=(0.08, 0.09, 0.16), strength=0.45, power=2.0),
+                 haze=(0.055, 0.065, 0.11), haze_max=0.95, mountain_haze=0.62, lights=0.6, floods=False),
+    "sunrise": dict(el=7.0, am=True, bg=0.14, exposure=0.35,
+                    clouds=dict(near=(1.0, 0.70, 0.42), far=(0.62, 0.60, 0.70), strength=1.1, power=2.5),
+                    haze=(0.58, 0.46, 0.36), haze_max=0.92, mountain_haze=0.50, lights=0.0, floods=False),
+    "morning": dict(el=20.0, am=True, bg=0.12, exposure=0.15,
+                    clouds=dict(near=(1.0, 0.86, 0.68), far=(0.92, 0.92, 0.98), strength=1.4, power=3.0),
+                    haze=(0.56, 0.53, 0.52), haze_max=0.88, mountain_haze=0.35, lights=0.0, floods=False),
     "late": dict(el=32.0, bg=0.11, exposure=0.1,
                  clouds=dict(near=(1.0, 0.94, 0.86), far=(0.96, 0.97, 1.0), strength=1.55, power=3.0),
                  haze=(0.52, 0.55, 0.62), haze_max=0.90, mountain_haze=0.35, lights=0.0, floods=False),
@@ -46,17 +56,40 @@ TIMES = {
 }
 
 
+def mix(a, b, f):
+    """2 つの時刻の値を f(0〜1)で混ぜた dict を返す。setup_dict に渡す。"""
+    a, b = TIMES[a] if isinstance(a, str) else a, TIMES[b] if isinstance(b, str) else b
+
+    def m(x, y):
+        if isinstance(x, dict):
+            return {k: m(x[k], y[k]) for k in x}
+        if isinstance(x, bool):
+            return y if f >= 0.5 else x
+        if isinstance(x, (tuple, list)):
+            return tuple(p + (q - p) * f for p, q in zip(x, y))
+        return x + (y - x) * f
+    return m(a, b)
+
+
 def setup(scene, name, **over):
     """over で一部の値(太陽の高さ el など)を変えられる。"""
     t = TIMES[name]
     if t is not None and over:
         t = dict(t, **over)
+    setup_dict(scene, t)
+
+
+def setup_dict(scene, t):
+    """時刻の値の dict(TIMES の 1 つ、または mix の結果)で空と明かりを整える。None は夜。"""
     if t is None:
         sky.setup_night(scene)
         _ext_lights(1.0)
         set_floodlights(True)
         return
-    sky.setup_day(scene, az=afternoon_azimuth(t["el"]), el=t["el"], bg_strength=t["bg"], exposure=t["exposure"], clouds=t["clouds"])
+    az = t.get("az", afternoon_azimuth(t["el"]))
+    if t.get("am") and "az" not in t:
+        az = 360.0 - az
+    sky.setup_day(scene, az=az, el=t["el"], bg_strength=t["bg"], exposure=t["exposure"], clouds=t["clouds"])
     _set_dn(t["lights"])
     _emissive(t["lights"])
     _ext_lights(t["lights"])
