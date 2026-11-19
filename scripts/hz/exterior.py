@@ -71,7 +71,7 @@ def _scrum_facade(cfg, c):
     mb.build("scrum_facade", c)
     # 赤い施設名
     p = xf @ Vector((X["name_u"], D + 0.75, X["name_z"]))
-    text_obj("name_sign", "HANAZONO RUGBY STADIUM", X["name_h"], M.emissive("name_red", (1.0, 0.05, 0.04, 1), 0.0, 7.0, base=M.srgb(200, 30, 36)), c, p, (-1, 0, 0),
+    text_obj("name_sign", "HANAZONO RUGBY STADIUM", X["name_h"], M.emissive("name_red", (1.0, 0.01, 0.005, 1), 0.0, 2.4, base=M.srgb(200, 30, 36)), c, p, (-1, 0, 0),
              extrude=0.12, max_width=X["name_w"])
     # 上の小さな照明のポール
     pm = MB(xf)
