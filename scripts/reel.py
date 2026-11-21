@@ -24,6 +24,7 @@ from mathutils import Matrix, Vector  # noqa: E402
 from hz import config, sky, tod  # noqa: E402
 
 FPS = 24
+PAD = 12                 # カットごとのファイルにするとき、前後に足すコマ(0.5 秒)。インスタで曲に合わせて切れるように
 # exterior.py の線路の向き(電車を動かすのに使う)
 RAIL_DIR = (-0.247, -0.969)
 
@@ -100,22 +101,23 @@ def s09(s):   # 夜: 上がりながら下がり、町の灯りの中の一点�
 
 
 # id: (時刻, 時刻の上書き, 秒, レンズ, path, 背景のぼけ(ピントの距離, F 値) か None)
-# 長さは曲(Formula 1 Theme、100 BPM、1 拍 0.6 秒、1 小節 2.4 秒)の拍に合わせる。切り替えは 3.6 秒ごと(1 拍半小節おき)、
-# 7.2 秒・21.6 秒は 2 小節ごとの強い拍。1 拍は 14.4 コマで割り切れないので、通しのコマ数で丸めた値にしてある
+# 長さは曲(Formula 1 Theme、100 BPM、1 拍 0.6 秒、1 小節 2.4 秒)に合わせる。曲の頭はドラムの入り(16 分の連打)で、
+# 小節の頭は 0.525 秒、そこから 1.2 秒(2 拍)ごとに強い拍がある。切り替えはその強い拍の上(4.125 秒から 3.6 秒おき)。
+# カット 7 は 22.125 秒の小節の頭から。1 拍は 14.4 コマで割り切れないので、通しのコマ数で丸めた値にしてある
 SHOTS = {
-    1: ("late", {"el": 42.0}, 86 / FPS, 20, s01, None),
-    2: ("late", {"el": 40.0, "haze_scale": 900.0}, 87 / FPS, 20, s02, None),   # 遠くの町を霞ませて、町の切れ目を隠す
-    3: ("late", {"el": 37.0}, 86 / FPS, 20, s03, (22.0, 2.8)),
-    4: ("late", {"el": 35.0}, 87 / FPS, 24, s04, (110.0, 2.0)),   # 手前の背もたれをぼかす
-    5: ("golden", {"el": 33.0}, 86 / FPS, 16, s05, (128.0, 0.35)),   # 手前の屋根の鉄骨を大きくぼかす(F 値は実在しない明るさ)
+    1: ("late", {"el": 42.0}, 99 / FPS, 20, s01, None),
+    2: ("late", {"el": 40.0, "haze_scale": 900.0}, 86 / FPS, 20, s02, None),   # 遠くの町を霞ませて、町の切れ目を隠す
+    3: ("late", {"el": 37.0}, 87 / FPS, 20, s03, (22.0, 2.8)),
+    4: ("late", {"el": 35.0}, 86 / FPS, 24, s04, (110.0, 2.0)),   # 手前の背もたれをぼかす
+    5: ("golden", {"el": 33.0}, 87 / FPS, 16, s05, (128.0, 0.35)),   # 手前の屋根の鉄骨を大きくぼかす(F 値は実在しない明るさ)
     6: ("sunset", {}, 86 / FPS, 24, s06, None),
-    7: ("blue", {}, 87 / FPS, 24, s07, None),     # 1.2 秒(2 拍目)で投光器が点く
-    8: ("night", {}, 115 / FPS, 24, s08, None),
+    7: ("blue", {}, 86 / FPS, 24, s07, None),     # 1.2 秒(小節の 3 拍目)で投光器が点く
+    8: ("night", {}, 116 / FPS, 24, s08, None),
     9: ("night", {}, 144 / FPS, 24, s09, None),
 }
 LIGHTS_SHOT = 7
 # 照明が点く時刻(カット 7 の中の秒)。点いて、一瞬消えて、また点く
-LIGHTS_ON = [(0.0, False), (1.2, True), (1.275, False), (1.35, True)]   # 2 拍目で点き、16 分音符で瞬く
+LIGHTS_ON = [(0.0, False), (1.2, True), (1.275, False), (1.35, True)]   # 小節の 3 拍目で点き、16 分音符で瞬く
 TRAIN_SHOT = 9
 # 電車の進み(線路に沿った m)。最初と最後
 TRAIN_RUN = (560.0, 640.0)
@@ -144,8 +146,8 @@ def lights_on_at(sec):
     return on
 
 
-def key_camera(scene, cam, sid):
-    """カメラ(と電車)に 1 コマごとのキーを打つ。前後 1 コマずつ余分に打って、動きのぶれを正しくする。"""
+def key_camera(scene, cam, sid, pad=0):
+    """カメラ(と電車)に 1 コマごとのキーを打つ。前後 pad + 1 コマずつ余分に打つ(余白と動きのぶれ用)。"""
     _, _, _, lens, path, dof = SHOTS[sid]
     n = frames_of(sid)
     cam.animation_data_clear()
@@ -155,7 +157,7 @@ def key_camera(scene, cam, sid):
     if dof:
         cam.data.dof.focus_distance, cam.data.dof.aperture_fstop = dof
     prev = None
-    for f in range(-1, n + 1):
+    for f in range(-1 - pad, n + 1 + pad):
         s = f / (n - 1)
         loc, tgt = path(s) if 0 <= f < n else _extrap(path, s)
         q = cam_matrix(loc, tgt)
@@ -169,7 +171,7 @@ def key_camera(scene, cam, sid):
     train = bpy.data.objects.get("train")
     if train:
         train.animation_data_clear()
-        for f in (-1, n):
+        for f in (-1 - pad, n + pad):
             d = lerp(TRAIN_RUN[0], TRAIN_RUN[1], f / (n - 1)) if sid == TRAIN_SHOT else 0.0
             train.location = (RAIL_DIR[0] * d, RAIL_DIR[1] * d, 0.0)
             train.keyframe_insert("location", frame=f)
@@ -210,6 +212,7 @@ def main():
     ap.add_argument("--preview", action="store_true")
     ap.add_argument("--samples", type=int, default=48)
     ap.add_argument("--res", default="1080x1920")
+    ap.add_argument("--cuts", action="store_true", help="カットごとのファイル用に、前後 0.5 秒ずつ足して out/reel_cuts/ に描く")
     a = ap.parse_args(argv)
     scene = bpy.context.scene
     res = tuple(int(v) for v in a.res.split("x"))
@@ -236,20 +239,22 @@ def main():
     scene.camera = cam
 
     ids = sorted(SHOTS) if a.shots == "all" else [int(v) for v in a.shots.split(",")]
-    root = os.path.join(config.ROOT, "out", "reel_v3_test" if a.test else "reel_v3_preview" if a.preview else "reel_v3")
+    root = os.path.join(config.ROOT, "out", "reel_v3_test" if a.test else "reel_v3_preview" if a.preview
+                        else "reel_cuts" if a.cuts else "reel_v3")
+    pad = PAD if a.cuts else 0
     t0 = time.time()
     done = 0
     for sid in ids:
         when, over = SHOTS[sid][0], SHOTS[sid][1]
         n = frames_of(sid)
-        key_camera(scene, cam, sid)
+        key_camera(scene, cam, sid, pad)
         tod.setup(scene, when, **over)
         fdir = root if a.test else os.path.join(root, "s%02d" % sid)
         os.makedirs(fdir, exist_ok=True)
-        todo = [0, n // 2, n - 1] if a.test else range(n)
+        todo = [0, n // 2, n - 1] if a.test else range(-pad, n + pad)
         for f in todo:
             path = (os.path.join(fdir, "s%02d_f%04d.jpg" % (sid, f)) if a.test
-                    else os.path.join(fdir, "f%04d.jpg" % f))
+                    else os.path.join(fdir, "f%04d.jpg" % (f + pad)))
             if os.path.exists(path) and not a.test:
                 continue
             if sid == LIGHTS_SHOT:
@@ -260,7 +265,7 @@ def main():
             done += 1
             if done % 10 == 0 or a.test:
                 el = time.time() - t0
-                print("[reel] カット %d %d / %d コマ(1 コマ %.1f 秒)" % (sid, f + 1, n, el / done), flush=True)
+                print("[reel] カット %d %d / %d コマ(1 コマ %.1f 秒)" % (sid, f + pad + 1, n + 2 * pad, el / done), flush=True)
     print("[reel] 終わり %d コマ %.0f 秒" % (done, time.time() - t0))
 
 
