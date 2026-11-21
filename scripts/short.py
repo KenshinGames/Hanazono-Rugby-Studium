@@ -198,7 +198,7 @@ def lights_s9(s, dur=4.0):
 P10 = [(-60.0, 120.0, 62.0), (-40.0, 62.0, 36.0), (-28.0, 44.0, 22.0), (-12.0, 18.0, 4.0), (10.0, 4.0, 1.1),
        (36.0, 0.8, 1.4), (50.0, 0.0, 5.5), (58.0, -1.0, 12.0), (64.0, -4.0, 22.0)]
 T10 = [(0.0, 20.0, 0.0), (10.0, 0.0, 0.0), (30.0, 0.0, 0.0), (50.0, 0.0, 2.0), (60.0, 0.0, 4.0),
-       (72.0, 0.0, 8.0), (90.0, -2.0, 22.0), (96.0, -8.0, 40.0), (90.0, -14.0, 60.0)]
+       (72.0, 0.0, 8.0), (90.0, -2.0, 18.0), (96.0, -8.0, 24.0), (96.0, -14.0, 26.0)]
 P11 = [P10[-1], (78.0, 20.0, 42.0), (70.0, 62.0, 56.0), (40.0, 95.0, 62.0)]
 T11 = [T10[-1], (40.0, -20.0, 10.0), (-10.0, 0.0, 0.0), (-14.0, 10.0, 6.0)]
 P1 = [P11[-1], (-10.0, 118.0, 56.0), (-34.0, 72.0, 47.0), (-41.0, 46.0, 33.0), (-48.0, 22.0, 18.0)]
@@ -233,7 +233,7 @@ SHOTS = {
     # 6 朝: 屋根の下から骨組みを見上げ、ゆっくり回る
     6: dict(t0=19.0, dur=4.0, lens=14, time=t_late_morning, lights=lambda s: ALL_OFF,
             path=Path([(4.0, 57.5, 12.6), (0.0, 58.5, 12.6)], [(4.6, 61.0, 40.0), (0.6, 62.0, 40.0)]),
-            up=lambda s: look_dir(lerp(-120.0, -60.0, s), 0.0), rep=0.5),
+            up=lambda s: look_dir(lerp(-120.0, -60.0, s), 0.0), no_seat_bounce=True, rep=0.5),
     # 7 昼 → 夕方: 真上から降りながら回る。影がグラウンドを横切る
     7: dict(t0=23.0, dur=4.0, lens=50, time=t_day_to_evening, lights=lambda s: ALL_OFF,
             path=Path([(-14.0, 2.0, 430.0), (-14.0, 0.0, 395.0)], [(-14.0, 2.0, 0.0), (-14.0, 0.0, 0.0)]),
@@ -253,6 +253,10 @@ SHOTS = {
     11: dict(t0=38.0, dur=2.0, prev=10, next=1, lens=LOOP_LENS, time=t_night, lights=lambda s: ALL_ON,
              path=Path(P11, T11, pre=P10[-2], post=P1[1], tpre=T10[-2], tpost=T1[1]), rep=0.6),
 }
+
+
+# サムネイルの 3 案: (番号, ショット, ショットの中のコマ)
+THUMBS = [(1, 1, 44), (2, 3, 71), (3, 9, 86)]
 
 
 def frames_of(sid):
@@ -516,6 +520,20 @@ def setup_shot(scene, cam, sid, pad):
     g = bpy.data.objects.get("short_grass")
     if g:
         g.hide_render = not sh.get("grass")
+    # 赤い座席の照り返しで白い屋根の裏が赤茶に染まるショットは、座席の照り返しだけを切る(座席そのものは見える)
+    for ob in bpy.data.objects:
+        if ob.name.startswith(("seat_", "seatpts_")):
+            ob.visible_diffuse = not sh.get("no_seat_bounce")
+    # 夜は屋根の上の面を暗く(投光器はグラウンドを向いているので、実物の屋根の上は暗い。白く平らに光ると画面の下半分が間延びする)
+    m = bpy.data.materials.get("roof_sheet")
+    b = bsdf(m.node_tree) if m and m.use_nodes else None
+    if b:
+        if "base0" not in m:
+            m["base0"] = tuple(b.inputs["Base Color"].default_value)
+            m["rough0"] = b.inputs["Roughness"].default_value
+        night = sh["time"] is t_night
+        b.inputs["Base Color"].default_value = tuple(c * (0.28 if night else 1.0) for c in m["base0"][:3]) + (1.0,)
+        b.inputs["Roughness"].default_value = 0.8 if night else m["rough0"]
 
 
 def _linear(action):
@@ -560,9 +578,11 @@ def main():
     ap.add_argument("--res", default="1080x1920")
     ap.add_argument("--frames", default="")        # 確かめたいコマだけ(ショットの中の番号)
     ap.add_argument("--out", default="")
+    ap.add_argument("--thumbs", action="store_true")   # サムネイル 3 案(THUMBS)を 2160×3840 で
+    ap.add_argument("--part", default="all")           # 本番: core(本編だけ)/ pad(前後の余白だけ)/ all
     a = ap.parse_args(argv)
     scene = bpy.context.scene
-    res = tuple(int(v) for v in a.res.split("x"))
+    res = (2160, 3840) if a.thumbs else tuple(int(v) for v in a.res.split("x"))
     samples = a.samples or (16 if a.preview else 64)
     if a.preview:
         res = (res[0] // 3 // 2 * 2, res[1] // 3 // 2 * 2)
@@ -606,6 +626,19 @@ def main():
         print("[check] 問題のあるコマ %d" % bad)
         return
 
+    if a.thumbs:
+        root = a.out or os.path.join(config.ROOT, "render", "short_thumb")
+        os.makedirs(root, exist_ok=True)
+        for k, sid, f in THUMBS:
+            setup_shot(scene, cam, sid, 0)
+            scene.frame_set(f)
+            apply_time(scene, cam, sid, pose(sid, f)[4])
+            scene.render.filepath = os.path.join(root, "t%d_s%02d.jpg" % (k, sid))
+            t1 = time.time()
+            bpy.ops.render.render(write_still=True)
+            print("[short] サムネイル %d(ショット %d コマ %d)%.0f 秒" % (k, sid, f, time.time() - t1), flush=True)
+        return
+
     if a.out:
         root = a.out
     elif a.board:
@@ -628,6 +661,10 @@ def main():
             todo = [int(round(SHOTS[sid]["rep"] * (n - 1)))]
         elif a.frames:
             todo = [int(v) for v in a.frames.split(",")]
+        elif a.part == "core":
+            todo = list(range(n))
+        elif a.part == "pad":
+            todo = list(range(-pad, 0)) + list(range(n, n + pad))
         else:
             todo = list(range(-pad, n + pad))
         fdir = root if (a.board or a.probe) else os.path.join(root, "s%02d" % sid)

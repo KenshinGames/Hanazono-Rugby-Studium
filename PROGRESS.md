@@ -1,7 +1,7 @@
 # 進み具合
 
 新しいセッションは、このファイルと docs/plan.md、docs/reference.md を読めば続きから始められる。
-最後に更新した日: 2026-11-20
+最後に更新した日: 2026-11-21
 
 ## 今の段階
 
@@ -18,12 +18,15 @@ docs/compare/ の 9 組、out/final/ の静止画 10 枚、out/hanazono_orbit.mp
 **YouTube ショート「目覚め」(縦 1080×1920、40 秒、24 コマ/秒、映像だけ)を作り中(2026-11-19〜)。**
 依頼の進め方は ①絵コンテ → 止まって見せる → ②動きの確認(小さい 40 秒と、ショットごとに本番設定の 1 コマ、時間の見積もり)→ 止まって見せる → ③本番。
 - ショットの表と、元の案から変えた所: docs/short/shotlist.md。描くのは scripts/short.py(`--board` / `--check` / `--preview` / `--probe` / 本番)
-- **① 絵コンテ docs/short/storyboard.jpg を作って本人に見せた(2026-11-20)。本人の感想か OK を待っている**
+- ① 絵コンテ docs/short/storyboard.jpg を本人に見せて OK(2026-11-21「いい感じ、完成品を見たい」)
   - 作り方: `blender -b build/hanazono.blend -P scripts/short.py -- --board`(11 コマ、約 12 分)→ `python3 tools/short_board.py`
   - カメラが物の中に入っていないかは `-- --check`(約 1 分。全コマと前後の余白、問題 0)
-- 次: ② `-- --preview`(render/short_preview/)を動画にまとめて out/short/ へ。`-- --probe` で時間を見積もる。
-  絵コンテの 64 サンプルでは 1 コマ 25〜160 秒(平均約 60 秒)で、余白込み 1008 コマだと約 17 時間。8 時間を超えるので、②で軽くする方法(サンプル、ノイズ除去、霞・光の筋の重さ)を先に試す
-- ③ 本番は render/short/sNN/(git に入れない)。まとめるスクリプト(色の整え、shots/ に前後 0.5 秒つき、upload/ にサムネイル 3 案 2160×3840)はまだ書いていない
+- ② 小さい 40 秒 out/short/hanazono_short_preview.mp4 を作って自分で確かめ、4 点を直した(shotlist.md の「②のあとに直した所」)。
+  本人は外出中で「12 時間以内なら進めていい」と言ったので、②で止まらずに本番へ進めた
+- **③ 本番を 2026-11-21 に流し始めた: `caffeinate -i sh scripts/short_final.sh`(ログは render/final*.log)。止まっていたら同じコマンドを流し直す(続きから描く)**
+  - 32 サンプル。順番は 本編 960 コマ(約 8 時間)→ out/short/hanazono_short.mp4 → サムネイル 3 案 upload/(short.py の THUMBS)→ 前後の余白 264 コマ(約 2 時間)→ out/short/shots/sNN.mp4
+  - 色は scripts/short_assemble.py の GRADE で整える(描き直さずに直せる)
+  - 終わったら: 動画とサムネイルを開いて確かめ、本人に見せる。render/short_preview/ と render/short_probe/ は消してよい
 - 他のセッションが別のプロジェクト(秩父宮)で Blender を動かしていると、GPU のメモリが足りずに止まる。`pgrep -f "Blender -b"` が空になるのを待ってから流す
 - Blender の表示が日本語なので、新しく作った材質のノードの名前も日本語になる。ノードは名前ではなく種類で探す(short.py の bsdf())
 
