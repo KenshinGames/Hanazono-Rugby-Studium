@@ -21,7 +21,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FPS = 24
 W, H = 1080, 1920              # 描いたコマの大きさに置き換わる(main)
 # scripts/reel.py の SHOTS と同じ長さにする
-SHOTS = [(1, 3.5), (2, 4.0), (3, 3.5), (4, 3.0), (5, 4.0), (6, 4.0), (7, 3.5), (8, 5.0), (9, 5.0)]
+SHOTS = [(1, 86 / FPS), (2, 87 / FPS), (3, 86 / FPS), (4, 87 / FPS), (5, 86 / FPS), (6, 86 / FPS), (7, 87 / FPS),
+         (8, 115 / FPS), (9, 144 / FPS)]
 TOTAL = sum(s[1] for s in SHOTS)
 LOGO_IN, LOGO_OUT = 0.3, 2.6   # アイコンが出始める秒、消え始める秒(どちらも 0.4 秒かける)
 ICON = 150                     # アイコンの大きさ(画素)
@@ -92,6 +93,7 @@ def main():
     ap.add_argument("--card", default="")
     ap.add_argument("--preview", action="store_true")
     ap.add_argument("--logo", action="store_true")
+    ap.add_argument("--music", default="", help="確かめ用に曲を重ねる(本番の動画には入れない。曲はインスタのアプリで付ける)")
     a = ap.parse_args()
     global W, H
     ic = icons()
@@ -135,8 +137,13 @@ def main():
         out = os.path.join(ROOT, "out", "hanazono_reel.mp4")
         enc = ["-c:v", "libx264", "-profile:v", "high", "-crf", "16", "-preset", "slow"]
     blank = ["-f", "lavfi", "-t", "0.1", "-i", "color=c=black:s=16x16"]   # 入力 0 の穴埋め
-    run(["ffmpeg", "-v", "error", "-y"] + blank + loop(ic["claude"]) + loop(ic["blender"]) + inputs +
-        ["-filter_complex", ";".join(fc), "-map", "[v]", "-t", str(TOTAL)] + enc +
+    audio = []
+    if a.music:
+        out = out.replace(".mp4", "_music.mp4")
+        audio = ["-i", a.music]
+        mapa = ["-map", "%d:a" % k, "-c:a", "aac", "-b:a", "192k"]
+    run(["ffmpeg", "-v", "error", "-y"] + blank + loop(ic["claude"]) + loop(ic["blender"]) + inputs + audio +
+        ["-filter_complex", ";".join(fc), "-map", "[v]"] + (mapa if a.music else []) + ["-t", str(TOTAL)] + enc +
         ["-r", str(FPS), "-movflags", "+faststart", out])
     print("[reel] 保存 %s(%dx%d、%.1f 秒)" % (out, W, H, TOTAL))
 
