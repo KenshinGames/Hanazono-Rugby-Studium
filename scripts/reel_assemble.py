@@ -31,7 +31,7 @@ FADE_OUT = 0.7
 # カットごとの色(ffmpeg のフィルタ)。描いた後で直せるように、色はここで整える
 WARM = "colorbalance=rs=0.02:bs=-0.03:rm=0.03:bm=-0.03:rh=0.02:bh=-0.02,eq=saturation=1.06"
 GRADE = {
-    2: WARM, 3: WARM, 4: WARM,
+    1: WARM, 2: WARM, 3: WARM, 4: WARM,
     5: "colorbalance=rs=0.04:bs=-0.04:rm=0.05:bm=-0.05:rh=0.03:bh=-0.03,eq=saturation=1.08",
     6: "eq=saturation=1.08",
     7: "colorbalance=bs=0.03:bm=0.02",
