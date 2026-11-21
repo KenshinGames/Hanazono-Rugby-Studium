@@ -15,7 +15,10 @@ docs/compare/ の 9 組、out/final/ の静止画 10 枚、out/hanazono_orbit.mp
 
 ## 次にやること(引き継ぎ用)
 
-**YouTube ショート「目覚め」(縦 1080×1920、40 秒、24 コマ/秒、映像だけ)を作り中(2026-11-19〜)。**
+**YouTube ショート「目覚め」(縦 1080×1920、40 秒、24 コマ/秒、映像だけ)は、本人の判断で③の本番の途中で止めた(2026-11-21 12:30 ごろ)。**
+本人がショートとリールの試写版を見比べ、「リールを作りこんでショートにしよう。ショートは画面を動かしすぎだし、スムーズじゃない」と決めた(リール担当のセッション経由で聞いた)。
+本人から再開の指示があるまで流さない。描けたコマは render/short/ に残してある(s01 60 枚・s02 108 枚・s03 15 枚)。
+再開するなら `caffeinate -i sh scripts/short_final.sh`(続きから描く)。scripts/short_final_loop.sh は止まっても自動で流し直す版で、本人の指示がない限り使わない。
 依頼の進め方は ①絵コンテ → 止まって見せる → ②動きの確認(小さい 40 秒と、ショットごとに本番設定の 1 コマ、時間の見積もり)→ 止まって見せる → ③本番。
 - ショットの表と、元の案から変えた所: docs/short/shotlist.md。描くのは scripts/short.py(`--board` / `--check` / `--preview` / `--probe` / 本番)
 - ① 絵コンテ docs/short/storyboard.jpg を本人に見せて OK(2026-11-21「いい感じ、完成品を見たい」)
@@ -23,7 +26,7 @@ docs/compare/ の 9 組、out/final/ の静止画 10 枚、out/hanazono_orbit.mp
   - カメラが物の中に入っていないかは `-- --check`(約 1 分。全コマと前後の余白、問題 0)
 - ② 小さい 40 秒 out/short/hanazono_short_preview.mp4 を作って自分で確かめ、4 点を直した(shotlist.md の「②のあとに直した所」)。
   本人は外出中で「12 時間以内なら進めていい」と言ったので、②で止まらずに本番へ進めた
-- **③ 本番を 2026-11-21 に流し始めた: `caffeinate -i sh scripts/short_final.sh`(ログは render/final*.log)。止まっていたら同じコマンドを流し直す(続きから描く)**
+- ③ 本番を 2026-11-21 に流し始めたが、上のとおり本人の判断で止めた: `caffeinate -i sh scripts/short_final.sh`(ログは render/final*.log)
   - 32 サンプル。順番は 本編 960 コマ(約 8 時間)→ out/short/hanazono_short.mp4 → サムネイル 3 案 upload/(short.py の THUMBS)→ 前後の余白 264 コマ(約 2 時間)→ out/short/shots/sNN.mp4
   - 色は scripts/short_assemble.py の GRADE で整える(描き直さずに直せる)
   - 終わったら: 動画とサムネイルを開いて確かめ、本人に見せる。render/short_preview/ と render/short_probe/ は消してよい
