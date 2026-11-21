@@ -93,7 +93,7 @@ def setup_dict(scene, t):
     _set_dn(t["lights"])
     _emissive(t["lights"])
     _ext_lights(t["lights"])
-    _haze(t["haze"], t["haze_max"], t["mountain_haze"])
+    _haze(t["haze"], t["haze_max"], t["mountain_haze"], t.get("haze_scale", 2600.0))
     set_floodlights(t["floods"])
     if t["lights"] > 0:
         sky._glare(scene, True)
@@ -154,12 +154,16 @@ def set_floodlights(on):
         b.inputs["Emission Strength"].default_value = m["emit_night"] if on else 0.0
 
 
-def _haze(color, vmax, mountain_max):
-    """霞の色と濃さを決める(materials.add_haze が作ったノードを書き換える)。"""
+def _haze(color, vmax, mountain_max, scale=2600.0):
+    """霞の色と濃さを決める(materials.add_haze が作ったノードを書き換える)。
+    scale は霞が濃くなるまでの距離(materials.HAZE_SCALE)。小さくすると近くから霞む(山は変えない)。"""
     for m in bpy.data.materials:
         if not m.get("hazed"):
             continue
         nt = m.node_tree
+        for n in nt.nodes:
+            if n.type == "MATH" and n.operation == "DIVIDE" and n.inputs[1].default_value < 0 and m.name != "mountain":
+                n.inputs[1].default_value = -scale   # 距離 / -scale(霞の濃さの元)
         for n in nt.nodes:
             if n.type != "VALUE" or not n.label.startswith("dn "):
                 continue
