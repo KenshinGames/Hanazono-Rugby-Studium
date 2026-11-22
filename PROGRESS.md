@@ -1,7 +1,7 @@
 # 進み具合
 
 新しいセッションは、このファイルと docs/plan.md、docs/reference.md を読めば続きから始められる。
-最後に更新した日: 2026-11-21
+最後に更新した日: 2026-11-22
 
 ## 今の段階
 
@@ -32,6 +32,19 @@ docs/compare/ の 9 組、out/final/ の静止画 10 枚、out/hanazono_orbit.mp
   - 終わったら: 動画とサムネイルを開いて確かめ、本人に見せる。render/short_preview/ と render/short_probe/ は消してよい
 - 他のセッションが別のプロジェクト(秩父宮)で Blender を動かしていると、GPU のメモリが足りずに止まる。`pgrep -f "Blender -b"` が空になるのを待ってから流す
 - Blender の表示が日本語なので、新しく作った材質のノードの名前も日本語になる。ノードは名前ではなく種類で探す(short.py の bsdf())
+
+**リールのカットごとの動画(out/reel_cuts/hanazono_cut01〜09.mp4、前後 0.5 秒の余白つき)は 2026-11-22 03:33 に本番が描き終わり、本人に届いた。**
+ドライブは ClaudeCode/hanazono_reel_cuts(rclone は drive.file なので、フォルダの ID 1ecpdfvJ6mMt051r_z7BrMZFsxC38JatS を
+`gdrive,root_folder_id=<ID>:` で指定して送る)。本人の感想(11-22): 
+- カット 1〜3 をあと 1 秒長く → reel.py / reel_assemble.py の EXTEND(終わりの後ろに 24 コマ)。動きは終わりの速さのまま延ばすので、
+  足したコマだけ描いた(`blender -b build/hanazono.blend -P scripts/reel.py -- --cuts --shots 1,2,3`、約 25 分)。
+  動画を作り直し、ドライブの 3 本を差し替え済み(147・134・135 コマ)
+- 夜のカットを 2 つ足す: 10 = 夜のグラウンド(南のゴールポストの後ろから上がる)、11 = 正面の七色が灯る(1.2 秒から 0.6 秒で手前から奥へ。
+  RAINBOW_ON、scrum_dark の材質に角度の覆いを掛ける)。カットごとのファイルだけに入れ、通しの動画(MAIN_SHOTS)には入れていない
+  - 試写: `blender ... reel.py -- --preview --cuts --shots 10,11` → `python3 scripts/reel_assemble.py --cuts --preview --shots 10,11`
+    → out/reel_cuts_preview/hanazono_cut10_preview.mp4 と 11。**本人の感想か OK を待つ**
+  - OK のあと本番: `caffeinate -i blender -b build/hanazono.blend -P scripts/reel.py -- --cuts --shots 10,11`(約 220 コマ、1 時間半ほど)
+    → `python3 scripts/reel_assemble.py --cuts --shots 10,11` → ドライブへ
 
 **インスタのリール(縦 40 秒)を第 3 版に作り直し中(2026-11-18 夜〜)。** 台本は docs/reel/台本.md(本人の感想と直しの表あり)。
 第 2 版(out/hanazono_reel.mp4、昼で始まり昼夜を重ねたもの)は本人がドライブで見て、ぶつ切り・速すぎ・照明の時刻がずれている、と感想をくれた。

@@ -100,6 +100,18 @@ def s09(s):   # 夜: 上がりながら下がり、町の灯りの中の一点�
     return loc, lerp((-60.0, 0.0, 0.0), (-30.0, 0.0, 0.0), k)
 
 
+# 2026-11-22 に本人の頼みで足した夜の 2 カット(カットごとのファイルだけ。通しの動画には入れていない)
+def s10(s):   # 夜: 南のゴールポストの後ろの低い所から上がる。ポストの間に、照らされた芝と線が奥まで開け、奥に映像装置
+    loc = lerp((-58.0, 0.0, 1.2), (-55.0, 0.0, 4.6), s)
+    return loc, lerp((40.0, 0.0, 6.5), (40.0, 0.0, 3.0), s)
+
+
+def s11(s):   # 夜: 正面広場から外壁を斜めに見て横へ。1.2 秒で七色が手前から奥へ走って灯る
+    # 近く低くから見上げ、縦の画面に外壁を大きく入れる。広場の街灯(x=-140)より外壁の側を通り、街灯を画面に入れない
+    loc = lerp((-136.0, -34.0, 1.5), (-133.0, -29.0, 1.8), s)
+    return loc, lerp((-121.0, 2.0, 13.0), (-121.0, 6.0, 13.0), s)
+
+
 # id: (時刻, 時刻の上書き, 秒, レンズ, path, 背景のぼけ(ピントの距離, F 値) か None)
 # 長さは曲(Formula 1 Theme、100 BPM、1 拍 0.6 秒、1 小節 2.4 秒)に合わせる。曲の頭はドラムの入り(16 分の連打)で、
 # 小節の頭は 0.525 秒、そこから 1.2 秒(2 拍)ごとに強い拍がある。切り替えはその強い拍の上(4.125 秒から 3.6 秒おき)。
@@ -114,7 +126,19 @@ SHOTS = {
     7: ("blue", {}, 86 / FPS, 24, s07, None),     # 1.2 秒(小節の 3 拍目)で投光器が点く
     8: ("night", {}, 116 / FPS, 24, s08, None),
     9: ("night", {}, 144 / FPS, 24, s09, None),
+    10: ("night", {}, 86 / FPS, 18, s10, None),
+    11: ("night", {}, 86 / FPS, 18, s11, None),
 }
+MAIN_SHOTS = list(range(1, 10))   # 通しの動画に入れるカット
+RAINBOW_SHOT = 11
+# 七色が灯るとき(カット 11 の中の秒): 1.2 秒(小節の 3 拍目)から 0.6 秒(1 拍)で手前から奥へ走る
+RAINBOW_ON = (1.2, 0.6)
+# 七色の帯の、灯った所と消えた所の境のぼけ(角度 1 ラジアンあたり)。色相を決める角度(南の弧の中心から見た角度)で灯す
+RAINBOW_EDGE = 6.0
+# --cuts のとき、カットの終わりの後ろに足すコマ(本人の「1〜3 はあと 1 秒長く」、2026-11-22)。
+# 動きは終わりの速さのまま延ばす(_extrap)ので、描いてあるコマはそのまま使え、足した分だけ描けばよい。
+# 後ろの余白 0.5 秒はその先に付く(1 秒延ばしても、さらに 0.5 秒の余裕がある)
+EXTEND = {1: 24, 2: 24, 3: 24}
 LIGHTS_SHOT = 7
 # 照明が点く時刻(カット 7 の中の秒)。点いて、一瞬消えて、また点く
 LIGHTS_ON = [(0.0, False), (1.2, True), (1.275, False), (1.35, True)]   # 小節の 3 拍目で点き、16 分音符で瞬く
@@ -138,6 +162,38 @@ def cam_matrix(loc, target, up=(0.0, 0.0, 1.0)):
     return m.to_quaternion()
 
 
+def rainbow_sweep_nodes():
+    """七色の帯(scrum_dark)の光の強さに、角度で切る覆いを掛ける。返す Value ノードの値より角度が小さい所だけ光る。
+    角度は南の弧の中心(-66, 0)から見た向き(東の端が -1.2 ほど、西の端が +1.2 ほど)。"""
+    m = bpy.data.materials.get("scrum_dark")
+    nt = m.node_tree
+    N, L = nt.nodes, nt.links
+    sw = N.get("reel_sweep")
+    if sw:
+        return sw
+    at = next(n for n in N if n.type == "MATH" and n.operation == "ARCTAN2")
+    b = next(n for n in N if n.type == "BSDF_PRINCIPLED")
+    src = b.inputs["Emission Strength"].links[0].from_socket       # dn の値(夜 1.1)
+    sw = N.new("ShaderNodeValue"); sw.name = "reel_sweep"
+    sw.outputs[0].default_value = 10.0
+    d = N.new("ShaderNodeMath"); d.operation = "SUBTRACT"
+    L.new(sw.outputs[0], d.inputs[0]); L.new(at.outputs[0], d.inputs[1])
+    k = N.new("ShaderNodeMath"); k.operation = "MULTIPLY"; k.use_clamp = True
+    k.inputs[1].default_value = RAINBOW_EDGE
+    L.new(d.outputs[0], k.inputs[0])
+    mm = N.new("ShaderNodeMath"); mm.operation = "MULTIPLY"
+    L.new(src, mm.inputs[0]); L.new(k.outputs[0], mm.inputs[1])
+    L.new(mm.outputs[0], b.inputs["Emission Strength"])
+    return sw
+
+
+def rainbow_at(sec):
+    """カット 11 の sec 秒の、覆いの角度。点く前は -2(全部消える)、点いたあとは 2(全部光る)。"""
+    t0, dur = RAINBOW_ON
+    u = min(1.0, max(0.0, (sec - t0) / dur))
+    return -2.0 + 4.0 * u
+
+
 def lights_on_at(sec):
     on = False
     for t, v in LIGHTS_ON:
@@ -146,8 +202,9 @@ def lights_on_at(sec):
     return on
 
 
-def key_camera(scene, cam, sid, pad=0):
-    """カメラ(と電車)に 1 コマごとのキーを打つ。前後 pad + 1 コマずつ余分に打つ(余白と動きのぶれ用)。"""
+def key_camera(scene, cam, sid, pad=0, ext=0):
+    """カメラ(と電車)に 1 コマごとのキーを打つ。前後 pad + 1 コマずつ余分に打つ(余白と動きのぶれ用)。
+    ext は終わりの後ろに足すコマ(EXTEND)。s は元の長さのまま数えるので、描いてあるコマの位置は変わらない。"""
     _, _, _, lens, path, dof = SHOTS[sid]
     n = frames_of(sid)
     cam.animation_data_clear()
@@ -157,7 +214,7 @@ def key_camera(scene, cam, sid, pad=0):
     if dof:
         cam.data.dof.focus_distance, cam.data.dof.aperture_fstop = dof
     prev = None
-    for f in range(-1 - pad, n + 1 + pad):
+    for f in range(-1 - pad, n + 1 + pad + ext):
         s = f / (n - 1)
         loc, tgt = path(s) if 0 <= f < n else _extrap(path, s)
         q = cam_matrix(loc, tgt)
@@ -213,6 +270,7 @@ def main():
     ap.add_argument("--samples", type=int, default=48)
     ap.add_argument("--res", default="1080x1920")
     ap.add_argument("--cuts", action="store_true", help="カットごとのファイル用に、前後 0.5 秒ずつ足して out/reel_cuts/ に描く")
+    ap.add_argument("--frames", default="", help="--test で描くコマ(カットの中の番号、カンマ区切り)")
     a = ap.parse_args(argv)
     scene = bpy.context.scene
     res = tuple(int(v) for v in a.res.split("x"))
@@ -238,8 +296,9 @@ def main():
     scene.collection.objects.link(cam)
     scene.camera = cam
 
-    ids = sorted(SHOTS) if a.shots == "all" else [int(v) for v in a.shots.split(",")]
-    root = os.path.join(config.ROOT, "out", "reel_v3_test" if a.test else "reel_v3_preview" if a.preview
+    ids = (sorted(SHOTS) if a.cuts else MAIN_SHOTS) if a.shots == "all" else [int(v) for v in a.shots.split(",")]
+    root = os.path.join(config.ROOT, "out", "reel_v3_test" if a.test else
+                        ("reel_cuts_preview" if a.cuts else "reel_v3_preview") if a.preview
                         else "reel_cuts" if a.cuts else "reel_v3")
     pad = PAD if a.cuts else 0
     t0 = time.time()
@@ -247,11 +306,13 @@ def main():
     for sid in ids:
         when, over = SHOTS[sid][0], SHOTS[sid][1]
         n = frames_of(sid)
-        key_camera(scene, cam, sid, pad)
+        ext = EXTEND.get(sid, 0) if a.cuts else 0
+        key_camera(scene, cam, sid, pad, ext)
         tod.setup(scene, when, **over)
         fdir = root if a.test else os.path.join(root, "s%02d" % sid)
         os.makedirs(fdir, exist_ok=True)
-        todo = [0, n // 2, n - 1] if a.test else range(-pad, n + pad)
+        test_frames = [int(v) for v in a.frames.split(",")] if a.frames else [0, n // 2, n - 1]
+        todo = test_frames if a.test else range(-pad, n + pad + ext)
         for f in todo:
             path = (os.path.join(fdir, "s%02d_f%04d.jpg" % (sid, f)) if a.test
                     else os.path.join(fdir, "f%04d.jpg" % (f + pad)))
@@ -259,13 +320,16 @@ def main():
                 continue
             if sid == LIGHTS_SHOT:
                 tod.set_floodlights(lights_on_at(f / FPS))
+            if sid == RAINBOW_SHOT:
+                rainbow_sweep_nodes().outputs[0].default_value = rainbow_at(f / FPS)
             scene.frame_set(f)
             scene.render.filepath = path
             bpy.ops.render.render(write_still=True)
             done += 1
             if done % 10 == 0 or a.test:
                 el = time.time() - t0
-                print("[reel] カット %d %d / %d コマ(1 コマ %.1f 秒)" % (sid, f + pad + 1, n + 2 * pad, el / done), flush=True)
+                print("[reel] カット %d %d / %d コマ(1 コマ %.1f 秒)" % (sid, f + pad + 1, n + 2 * pad + ext, el / done),
+                      flush=True)
     print("[reel] 終わり %d コマ %.0f 秒" % (done, time.time() - t0))
 
 

@@ -30,6 +30,8 @@ GAP = 84                       # アイコンの間(× を置く)
 ICON_Y = 330                   # アイコンの上端(インスタの上の表示より下、外壁の上の夜空)
 FADE_OUT = 0.7
 PAD = 12                       # scripts/reel.py の PAD と同じ(--cuts の前後の余分)
+EXTEND = {1: 24, 2: 24, 3: 24}  # scripts/reel.py の EXTEND と同じ(--cuts で終わりの後ろに足したコマ)
+EXTRA = [(10, 86 / FPS), (11, 86 / FPS)]   # カットごとのファイルだけに足した夜の 2 カット(通しの動画には入れない)
 # カットごとの色(ffmpeg のフィルタ)。描いた後で直せるように、色はここで整える
 WARM = "colorbalance=rs=0.02:bs=-0.03:rm=0.03:bm=-0.03:rh=0.02:bh=-0.02,eq=saturation=1.06"
 GRADE = {
@@ -89,18 +91,21 @@ def logo_filter(base="[base]", out="[v]"):
     return ";".join(f)
 
 
-def cuts():
+def cuts(ids=None, preview=False):
     """カットごとに out/reel_cuts/hanazono_cutNN.mp4 を作る(本人がインスタのアプリで曲に合わせてつなぐ)。
-    前後に 0.5 秒ずつ余分がある。色はカットごとに整え、黒への溶けはつけない。"""
-    d = os.path.join(ROOT, "out", "reel_cuts")
-    for sid, dur in SHOTS:
-        n = int(round(dur * FPS)) + 2 * PAD
+    前後に 0.5 秒ずつ余分がある。色はカットごとに整え、黒への溶けはつけない。
+    preview のときは out/reel_cuts_preview/ の小さいコマから hanazono_cutNN_preview.mp4 を作る。"""
+    d = os.path.join(ROOT, "out", "reel_cuts_preview" if preview else "reel_cuts")
+    for sid, dur in SHOTS + EXTRA:
+        if ids and sid not in ids:
+            continue
+        n = int(round(dur * FPS)) + 2 * PAD + EXTEND.get(sid, 0)
         fd = os.path.join(d, "s%02d" % sid)
         got = len([f for f in os.listdir(fd) if f.endswith(".jpg")]) if os.path.isdir(fd) else 0
         if got < n:
             sys.exit("[reel] s%02d のコマが足りません(%d / %d)。scripts/reel.py --cuts を続きから流してください" % (sid, got, n))
         g = ("format=gbrp," + GRADE[sid] + ",") if sid in GRADE else ""
-        out = os.path.join(d, "hanazono_cut%02d.mp4" % sid)
+        out = os.path.join(d, "hanazono_cut%02d%s.mp4" % (sid, "_preview" if preview else ""))
         run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", os.path.join(fd, "f%04d.jpg"),
              "-vf", g + "format=yuv420p", "-frames:v", str(n), "-c:v", "libx264", "-profile:v", "high", "-crf", "14",
              "-preset", "slow", "-r", str(FPS), "-movflags", "+faststart", out])
@@ -114,6 +119,7 @@ def main():
     ap.add_argument("--logo", action="store_true")
     ap.add_argument("--music", default="", help="確かめ用に曲を重ねる(本番の動画には入れない。曲はインスタのアプリで付ける)")
     ap.add_argument("--cuts", action="store_true", help="out/reel_cuts/ のコマから、カットごとの動画(前後 0.5 秒つき)を作る")
+    ap.add_argument("--shots", default="", help="--cuts で作るカット(カンマ区切り。省くと全部)")
     a = ap.parse_args()
     global W, H
     ic = icons()
@@ -127,7 +133,7 @@ def main():
         print("[reel] 確認用 %s" % out)
         return
     if a.cuts:
-        cuts()
+        cuts([int(v) for v in a.shots.split(",")] if a.shots else None, a.preview)
         return
 
     fr = os.path.join(ROOT, "out", "reel_v3_preview" if a.preview else "reel_v3")
